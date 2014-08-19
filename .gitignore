@@ -1,0 +1,4 @@
+native/
+build/
+build_native/
+*.dylib
