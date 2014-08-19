@@ -26,6 +26,11 @@
   IF ( ${CMAKE_SYSTEM_NAME} MATCHES "Linux" )
     # For linux, report error when shared libraries contains undefined references.
     SET ( CMAKE_SHARED_LINKER_FLAGS "-Wl,--no-undefined" )
+    ADD_DEFINITIONS ( -DPLATFORM_LINUX )
+  ENDIF ( )
+
+  IF ( ${CMAKE_SYSTEM_NAME} MATCHES "Darwin" )
+    ADD_DEFINITIONS ( -DPLATFORM_MACOSX )
   ENDIF ( )
 
 #----------------------------------------------------------------------------------------------------------------------
@@ -51,6 +56,8 @@
 
 INCLUDE_DIRECTORIES (
   include
+  ${ALLOCORE_INCLUDE_DIRS}
+  ${ALLOUTIL_INCLUDE_DIRS}
 )
 
 #----------------------------------------------------------------------------------------------------------------------

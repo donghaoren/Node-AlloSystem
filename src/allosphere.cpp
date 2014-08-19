@@ -3,8 +3,14 @@
 #include <alloutil/al_OmniApp.hpp>
 #include <alloutil/al_OmniStereo.hpp>
 
-
-#include <GLUT/glut.h>
+#ifdef PLATFORM_MACOSX
+  #include <OpenGL/OpenGL.h>
+  #include <GLUT/glut.h>
+#endif
+#ifdef PLATFORM_LINUX 
+  #include <GL/glut.h>
+  #include <GL/freeglut_ext.h>
+#endif
 
 namespace iv { namespace al {
 
@@ -41,7 +47,12 @@ namespace iv { namespace al {
         }
 
         virtual void tick() {
+        #ifdef PLATFORM_LINUX
+            glutMainLoopEvent();
+        #endif
+        #ifdef PLATFORM_MACOSX
             glutCheckLoop();
+        #endif
             ::al::Main::get().tick();
         }
 
