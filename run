@@ -1,0 +1,6 @@
+#!/bin/bash
+
+export DYLD_LIBRARY_PATH=$DYLD_LIBRARY_PATH:./native/lib
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:./native/lib
+
+node $@
