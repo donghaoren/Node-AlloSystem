@@ -1,12 +1,12 @@
 {
   "targets": [
     {
-      "target_name": "ivnj_allosphere",
+      "target_name": "node_allosphere",
       "include_dirs": [
         "native/include"
       ],
       "libraries": [
-        "-L../native/lib", "-livnj-allosphere"
+        "-L../native/lib", "-lnode-allosphere"
       ],
       "cflags_cc": [
         "-std=c++11"
@@ -19,18 +19,19 @@
         } ],
       ],
       "sources": [
-        "src/ivnj_allosphere.cpp",
+        "src/node_allosphere.cpp",
         "src/glbind.cpp",
+        "src/stream.cpp",
         "src/glubind.cpp"
       ]
     },
     {
-      "target_name": "ivnj_canvas",
+      "target_name": "node_graphics",
       "include_dirs": [
         "native/include"
       ],
       "libraries": [
-        "-L../native/lib", "-livnj-canvas"
+        "-L../native/lib", "-lnode-graphics"
       ],
       "cflags_cc": [
         "-std=c++11"
@@ -42,7 +43,7 @@
           },
         } ],
       ],
-      "sources": [ "src/ivnj_canvas.cpp" ]
+      "sources": [ "src/node_graphics.cpp" ]
     }
   ]
 }

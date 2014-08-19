@@ -52,7 +52,10 @@ namespace graphics {
         // Draw a path.
         virtual void drawPath(Path* path, Paint* paint) = 0;
         // Draw text.
-        virtual void drawText(const std::string& text, double x, double y, Paint* paint) = 0;
+        virtual void drawText(const char* text, double x, double y, Paint* paint) = 0;
+        void drawText(const std::string& text, double x, double y, Paint* paint) {
+            drawText(text.c_str(), x, y, paint);
+        }
         // Draw line.
         virtual void drawLine(Vector3 p1, Vector3 p2, Paint* paint) = 0;
         // Draw line.
@@ -122,7 +125,10 @@ namespace graphics {
         // Font styles.
         virtual void setTextSize(double value) = 0;
         virtual void setTextAlign(TextAlign align) = 0;
-        virtual void setTypeface(const std::string& name, FontStyle style = FontStyle::NORMAL) = 0;
+        virtual void setTypeface(const char* name, FontStyle style = FontStyle::NORMAL) = 0;
+        void setTypeface(const std::string& name, FontStyle style = FontStyle::NORMAL) {
+            setTypeface(name.c_str(), style);
+        }
 
         // Measure text width.
         virtual double measureText(const std::string& text) = 0;

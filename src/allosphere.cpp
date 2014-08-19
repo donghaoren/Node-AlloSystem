@@ -7,7 +7,7 @@
   #include <OpenGL/OpenGL.h>
   #include <GLUT/glut.h>
 #endif
-#ifdef PLATFORM_LINUX 
+#ifdef PLATFORM_LINUX
   #include <GL/glut.h>
   #include <GL/freeglut_ext.h>
 #endif
@@ -18,6 +18,9 @@ namespace iv { namespace al {
     public:
         ApplicationImpl() {
             delegate = NULL;
+
+            light.ambient(::al::Color(0.4, 0.4, 0.4, 1.0));
+            light.pos(5, 5, 5);
         }
 
         virtual void setDelegate(Delegate* delegate_) {
@@ -56,14 +59,25 @@ namespace iv { namespace al {
             ::al::Main::get().tick();
         }
 
+        virtual void shaderUniformf(const char* name, float value) {
+            shader().uniform(name, value);
+        }
+
+        virtual void shaderUniformi(const char* name, int value) {
+            shader().uniform(name, value);
+        }
+
         virtual bool onFrame() {
             if(delegate) delegate->onFrame();
             return OmniApp::onFrame();
         }
 
         virtual void onDraw(::al::Graphics& g) {
+            light();
             if(delegate) delegate->onDraw();
         }
+
+        ::al::Light light;
 
         Delegate* delegate;
     };

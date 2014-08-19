@@ -1,7 +1,9 @@
 #include <node.h>
 #include <v8.h>
 
-#include "allosphere.h"
+#include <string>
+
+#include <allosphere.h>
 #include "glbind.h"
 
 using namespace v8;
@@ -90,13 +92,28 @@ Handle<Value> EXPORT_onDraw(const Arguments& args) {
     return Undefined();
 }
 
+Handle<Value> EXPORT_shaderUniformi(const Arguments& args) {
+    String::Utf8Value name(args[0]);
+    std::string name_(*name, *name + name.length());
+    application->app->shaderUniformi(name_.c_str(), args[1]->IntegerValue());
+    return Undefined();
+}
+Handle<Value> EXPORT_shaderUniformf(const Arguments& args) {
+  String::Utf8Value name(args[0]);
+    std::string name_(*name, *name + name.length());
+    application->app->shaderUniformf(name_.c_str(), args[1]->NumberValue());
+    return Undefined();
+}
+
 void NODE_init(Handle<Object> exports) {
   exports->Set(String::NewSymbol("initialize"), FunctionTemplate::New(EXPORT_initialize)->GetFunction());
   exports->Set(String::NewSymbol("tick"), FunctionTemplate::New(EXPORT_tick)->GetFunction());
   exports->Set(String::NewSymbol("onFrame"), FunctionTemplate::New(EXPORT_onFrame)->GetFunction());
   exports->Set(String::NewSymbol("onDraw"), FunctionTemplate::New(EXPORT_onDraw)->GetFunction());
+  exports->Set(String::NewSymbol("shaderUniformi"), FunctionTemplate::New(EXPORT_shaderUniformi)->GetFunction());
+  exports->Set(String::NewSymbol("shaderUniformf"), FunctionTemplate::New(EXPORT_shaderUniformf)->GetFunction());
   gl_factory = new GlFactory();
   exports->Set(String::NewSymbol("OpenGL"), gl_factory->createGl()->NewInstance());
 }
 
-NODE_MODULE(ivnj_allosphere, NODE_init)
+NODE_MODULE(node_allosphere, NODE_init)

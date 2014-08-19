@@ -68,11 +68,12 @@ INCLUDE_DIRECTORIES (
 
   INCLUDE_DIRECTORIES ( ${Skia_INCLUDE_DIRS} )
 
-  ADD_LIBRARY ( ivnj-canvas SHARED
-    src/canvas_skia.cpp
+  ADD_LIBRARY ( node-graphics SHARED
+    src/graphics_skia.cpp
+    src/stream.cpp
   )
 
-  TARGET_LINK_LIBRARIES ( ivnj-canvas
+  TARGET_LINK_LIBRARIES ( node-graphics
     LINK_PRIVATE
       ${Skia_LIBRARIES}
       ${OPENGL_LIBRARIES}
@@ -89,11 +90,11 @@ INCLUDE_DIRECTORIES (
     ${ALLOUTIL_INCLUDE_DIRS}
   )
 
-  ADD_LIBRARY ( ivnj-allosphere SHARED
+  ADD_LIBRARY ( node-allosphere SHARED
     src/allosphere.cpp
   )
 
-  TARGET_LINK_LIBRARIES ( ivnj-allosphere
+  TARGET_LINK_LIBRARIES ( node-allosphere
     ${ALLOCORE_LIBRARIES}
     ${ALLOUTIL_LIBRARIES}
   )
@@ -106,7 +107,7 @@ INCLUDE_DIRECTORIES (
     FILES
       include/allosphere.h
       include/common.h
-      include/canvas.h
+      include/graphics.h
       include/stream.h
     DESTINATION include
   )
@@ -120,8 +121,8 @@ INCLUDE_DIRECTORIES (
   # Targets.
   INSTALL (
     TARGETS
-      ivnj-allosphere
-      ivnj-canvas
+      node-allosphere
+      node-graphics
     RUNTIME DESTINATION bin
     LIBRARY DESTINATION lib
     ARCHIVE DESTINATION lib

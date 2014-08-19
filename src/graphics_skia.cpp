@@ -1,4 +1,4 @@
-#include <canvas.h>
+#include <graphics.h>
 
 // Use release mode skia, even in debug builds.
 #define SK_RELEASE
@@ -190,7 +190,7 @@ namespace {
             }
         }
 
-        virtual void setTypeface(const std::string& name, FontStyle style) {
+        virtual void setTypeface(const char* name, FontStyle style) {
             SkTypeface::Style sty;
             switch(style) {
                 case FontStyle::NORMAL: {
@@ -209,7 +209,7 @@ namespace {
                     throw std::invalid_argument("fontstyle");
                 } break;
             }
-            SkTypeface* typeface = SkTypeface::CreateFromName(name.c_str(), sty);
+            SkTypeface* typeface = SkTypeface::CreateFromName(name, sty);
             paint.setTypeface(typeface);
             typeface->unref();
         }
@@ -252,12 +252,12 @@ namespace {
             canvas.drawPath(dynamic_cast<Path_Impl*>(path)->skpath, paint);
         }
         // Draw text.
-        virtual void drawText(const std::string& text, double x, double y, Paint* paint_) {
+        virtual void drawText(const char* text, double x, double y, Paint* paint_) {
             SkPaint& paint = dynamic_cast<Paint_Impl*>(paint_)->paint;
             canvas.save();
             canvas.translate(x, y);
             canvas.scale(1, -1);
-            canvas.drawText(text.c_str(), text.size(), 0, 0, paint);
+            canvas.drawText(text, strlen(text), 0, 0, paint);
             canvas.restore();
         }
         // Draw line.
@@ -341,24 +341,24 @@ namespace {
 
     };
 
-    // // A SkWStream that wrapps ByteStreams.
-    // class ByteStreamWrapper : public SkWStream {
-    // public:
+    // A SkWStream that wrapps ByteStreams.
+    class ByteStreamWrapper : public SkWStream {
+    public:
 
-    //     ByteStreamWrapper(ByteStream* s) : stream(s) { }
-    //     virtual bool write(const void *buffer, size_t size) {
-    //         return stream->write(buffer, size) == size;
-    //     }
-    //     virtual size_t bytesWritten() const {
-    //         return stream->position();
-    //     }
-    //     virtual void flush() {
-    //         stream->flush();
-    //     }
+        ByteStreamWrapper(ByteStream* s) : stream(s) { }
+        virtual bool write(const void *buffer, size_t size) {
+            return stream->write(buffer, size) == size;
+        }
+        virtual size_t bytesWritten() const {
+            return stream->position();
+        }
+        virtual void flush() {
+            stream->flush();
+        }
 
-    //     ByteStream* stream;
+        ByteStream* stream;
 
-    // };
+    };
 
     class Surface2D_Bitmap : public Surface2D {
     public:
@@ -415,10 +415,13 @@ namespace {
         }
 
         virtual void save(ByteStream* stream) {
-            // ByteStreamWrapper w(stream);
-            // if(!SkImageEncoder::EncodeStream(&w, bitmap, SkImageEncoder::kPNG_Type, 0)) {
-            //     cout << "Failed to save..." << endl;
-            // }
+            if(stream == 0) {
+                stream = ByteStream::OpenFile("test.png", "w");
+            }
+            ByteStreamWrapper w(stream);
+            if(!SkImageEncoder::EncodeStream(&w, bitmap, SkImageEncoder::kPNG_Type, 0)) {
+                cout << "Failed to save..." << endl;
+            }
         }
 
         virtual ~Surface2D_Bitmap() {
