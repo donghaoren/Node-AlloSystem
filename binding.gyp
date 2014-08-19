@@ -18,7 +18,11 @@
           },
         } ],
       ],
-      "sources": [ "src/ivnj_allosphere.cpp" ]
+      "sources": [
+        "src/ivnj_allosphere.cpp",
+        "src/glbind.cpp",
+        "src/glubind.cpp"
+      ]
     },
     {
       "target_name": "ivnj_canvas",

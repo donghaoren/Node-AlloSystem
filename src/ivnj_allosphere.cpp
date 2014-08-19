@@ -2,6 +2,7 @@
 #include <v8.h>
 
 #include "allosphere.h"
+#include "glbind.h"
 
 using namespace v8;
 
@@ -38,9 +39,12 @@ public:
 
     Persistent<Function> onFrameCallback;
     Persistent<Function> onDrawCallback;
+
+    GlFactory factory;
 };
 
 MyApplicationClass* application = 0;
+GlFactory* gl_factory;
 
 Handle<Value> EXPORT_initialize(const Arguments& args) {
   if(application) return Undefined();
@@ -50,13 +54,15 @@ Handle<Value> EXPORT_initialize(const Arguments& args) {
 }
 
 Handle<Value> EXPORT_tick(const Arguments& args) {
-  if(!application) return Undefined();
+  if(!application)
+      return ThrowException(Exception::RangeError(String::New("Must call initialize() first.")));
   application->app->tick();
   return Undefined();
 }
 
 Handle<Value> EXPORT_onFrame(const Arguments& args) {
-    if(!application) return Undefined();
+    if(!application)
+      return ThrowException(Exception::RangeError(String::New("Must call initialize() first.")));
     if(args.Length() != 1)
         return ThrowException(Exception::RangeError(String::New("Requires one argument.")));
     if(!args[0]->IsFunction()) {
@@ -70,7 +76,13 @@ Handle<Value> EXPORT_onFrame(const Arguments& args) {
 }
 
 Handle<Value> EXPORT_onDraw(const Arguments& args) {
-    if(!application) return Undefined();
+    if(!application)
+      return ThrowException(Exception::RangeError(String::New("Must call initialize() first.")));
+    if(args.Length() != 1)
+        return ThrowException(Exception::RangeError(String::New("Requires one argument.")));
+    if(!args[0]->IsFunction()) {
+        return ThrowException(Exception::TypeError(String::New("Callback should be callable.")));
+    }
     if(!application->onDrawCallback.IsEmpty()) {
         application->onDrawCallback.Dispose();
     }
@@ -83,6 +95,8 @@ void NODE_init(Handle<Object> exports) {
   exports->Set(String::NewSymbol("tick"), FunctionTemplate::New(EXPORT_tick)->GetFunction());
   exports->Set(String::NewSymbol("onFrame"), FunctionTemplate::New(EXPORT_onFrame)->GetFunction());
   exports->Set(String::NewSymbol("onDraw"), FunctionTemplate::New(EXPORT_onDraw)->GetFunction());
+  gl_factory = new GlFactory();
+  exports->Set(String::NewSymbol("OpenGL"), gl_factory->createGl()->NewInstance());
 }
 
 NODE_MODULE(ivnj_allosphere, NODE_init)
