@@ -27,7 +27,7 @@ setInterval(function() {
 
 var graphics = require("./build/Release/node_graphics");
 
-var s = new graphics.Surface2D(100, 100);
+var s = new graphics.Surface2D(1000, 1000);
 console.log(s.width());
 
 var context = new graphics.GraphicalContext2D(s);
@@ -36,11 +36,12 @@ var paint = context.paint();
 
 context.clear(255, 255, 255, 1);
 context.drawLine(0, 0, 100, 100, paint);
-paint.setTypeface("Georgia", graphics.FONTSTYLE_NORMAL);
-paint.setTextSize(12);
-context.drawText("123343434", 0, 0, paint);
+paint.setTypeface("STFangsong", graphics.FONTSTYLE_NORMAL);
+paint.setTextSize(120);
+context.drawText("你好", 0, 0, paint);
 
 s.save("test.png");
+s.uploadTexture();
 
 // Draw your stuff with OpenGL.
 allosphere.onDraw(function() {
@@ -50,7 +51,7 @@ allosphere.onDraw(function() {
     allosphere.shaderUniformi("texture0", 2);
     allosphere.shaderUniformf("lighting", 0.1);
 
-    s.uploadTexture();
+
 
     GL.begin(GL.QUADS);
     GL.texCoord2f(0, 0); GL.normal3f(0, 0, 1); GL.vertex3f(-1,  1, -1);
