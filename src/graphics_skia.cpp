@@ -215,8 +215,8 @@ namespace {
         }
 
         // Measure text width.
-        virtual double measureText(const std::string& text) {
-            return paint.measureText(text.c_str(), text.size());
+        virtual double measureText(const char* text) {
+            return paint.measureText(text, strlen(text));
         }
 
         SkPaint paint;
@@ -230,6 +230,7 @@ namespace {
           : canvas_ptr(new SkCanvas(bitmap)), canvas(*canvas_ptr) {
             canvas.translate(bitmap.width() / 2.0, bitmap.height() / 2.0);
             canvas.scale(1, -1);
+            matrix0 = getTransform();
         }
         // Initialize with a canvas pointer, add a reference to it.
         GraphicalContext_Impl(SkCanvas* canvas_ptr_, double width, double height)
@@ -237,6 +238,7 @@ namespace {
             canvas.ref();
             canvas.translate(width / 2.0, height / 2.0);
             canvas.scale(1, -1);
+            matrix0 = getTransform();
         }
         // Create a new path.
         virtual Path* path() {
@@ -288,7 +290,7 @@ namespace {
         }
         // Set the transformation matrix.
         virtual void setTransform(const Matrix3& matrix) {
-            canvas.setMatrix(convert_matrix(matrix));
+            canvas.setMatrix(convert_matrix(matrix0 * matrix));
         }
         // Get the current transformation matrix.
         virtual Matrix3 getTransform() const {
@@ -311,7 +313,7 @@ namespace {
         }
         // Reset the graphical state.
         virtual void reset() {
-            canvas.resetMatrix();
+            setTransform(matrix0);
         }
         // Save/load the current graphical state.
         virtual State save() const {
@@ -338,7 +340,7 @@ namespace {
 
         SkCanvas* canvas_ptr;
         SkCanvas& canvas;
-
+        Matrix3 matrix0;
     };
 
     // A SkWStream that wrapps ByteStreams.
@@ -432,7 +434,6 @@ namespace {
 
         SkBitmap bitmap;
         GLuint texture;
-
     };
 
     class Surface2D_PDF : public Surface2D {

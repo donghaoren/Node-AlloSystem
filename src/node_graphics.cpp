@@ -205,7 +205,7 @@ v8::Handle<v8::Value> NODE_GraphicalContext2D::NODE_drawText(const v8::Arguments
     Paint* paint = ObjectWrap::Unwrap<NODE_Paint2D>(args[3]->ToObject())->paint;
     NODE_GraphicalContext2D* self = ObjectWrap::Unwrap<NODE_GraphicalContext2D>(args.This());
     self->context->drawText(std::string(*str, *str + str.length()), x, y, paint);
-    return Undefined();
+    return args.This();
 }
 
 v8::Handle<v8::Value> NODE_GraphicalContext2D::NODE_drawLine(const v8::Arguments& args) {
@@ -248,15 +248,55 @@ v8::Handle<v8::Value> NODE_GraphicalContext2D::NODE_scale(const v8::Arguments& a
 }
 
 v8::Handle<v8::Value> NODE_GraphicalContext2D::NODE_concatTransform(const v8::Arguments& args) {
-    return Undefined();
+    iv::Matrix3 m;
+    double a = args[0]->NumberValue();
+    double b = args[1]->NumberValue();
+    double c = args[2]->NumberValue();
+    double d = args[3]->NumberValue();
+    double e = args[4]->NumberValue();
+    double f = args[5]->NumberValue();
+    // a c e
+    // b d f
+    // 0 0 1
+    m.a11 = a; m.a12 = c; m.a13 = e;
+    m.a21 = b; m.a22 = d; m.a23 = f;
+    m.a31 = 0; m.a32 = 0; m.a33 = 1;
+    NODE_GraphicalContext2D* self = ObjectWrap::Unwrap<NODE_GraphicalContext2D>(args.This());
+    self->context->concatTransform(m);
+    return args.This();
 }
 
 v8::Handle<v8::Value> NODE_GraphicalContext2D::NODE_setTransform(const v8::Arguments& args) {
-    return Undefined();
+    iv::Matrix3 m;
+    double a = args[0]->NumberValue();
+    double b = args[1]->NumberValue();
+    double c = args[2]->NumberValue();
+    double d = args[3]->NumberValue();
+    double e = args[4]->NumberValue();
+    double f = args[5]->NumberValue();
+    // a c e
+    // b d f
+    // 0 0 1
+    m.a11 = a; m.a12 = c; m.a13 = e;
+    m.a21 = b; m.a22 = d; m.a23 = f;
+    m.a31 = 0; m.a32 = 0; m.a33 = 1;
+    NODE_GraphicalContext2D* self = ObjectWrap::Unwrap<NODE_GraphicalContext2D>(args.This());
+    self->context->setTransform(m);
+    return args.This();
 }
 
 v8::Handle<v8::Value> NODE_GraphicalContext2D::NODE_getTransform(const v8::Arguments& args) {
-    return Undefined();
+    HandleScope scope;
+    NODE_GraphicalContext2D* self = ObjectWrap::Unwrap<NODE_GraphicalContext2D>(args.This());
+    iv::Matrix3 m = self->context->getTransform();
+    Handle<Array> array = Array::New(6);
+    array->Set(0, Number::New(m.a11));
+    array->Set(1, Number::New(m.a21));
+    array->Set(2, Number::New(m.a12));
+    array->Set(3, Number::New(m.a22));
+    array->Set(4, Number::New(m.a13));
+    array->Set(5, Number::New(m.a23));
+    return scope.Close(array);
 }
 
 v8::Handle<v8::Value> NODE_GraphicalContext2D::NODE_clear(const v8::Arguments& args) {
@@ -402,6 +442,8 @@ void NODE_Paint2D::Init(Handle<Object> exports) {
         String::NewSymbol("setTextAlign"), FunctionTemplate::New(NODE_setTextAlign)->GetFunction());
     tpl->PrototypeTemplate()->Set(
         String::NewSymbol("setTypeface"), FunctionTemplate::New(NODE_setTypeface)->GetFunction());
+    tpl->PrototypeTemplate()->Set(
+        String::NewSymbol("measureText"), FunctionTemplate::New(NODE_measureText)->GetFunction());
 
     constructor = Persistent<Function>::New(tpl->GetFunction());
 
@@ -489,6 +531,14 @@ v8::Handle<v8::Value> NODE_Paint2D::NODE_setTypeface(const v8::Arguments& args) 
     }
     self->paint->setTypeface(std::string(*str, *str + str.length()), style);
     return args.This();
+}
+
+v8::Handle<v8::Value> NODE_Paint2D::NODE_measureText(const v8::Arguments& args) {
+    HandleScope scope;
+    String::Utf8Value str(args[0]);
+    NODE_Paint2D* self = ObjectWrap::Unwrap<NODE_Paint2D>(args.This());
+    double width = self->paint->measureText(std::string(*str, *str + str.length()));
+    return scope.Close(Number::New(width));
 }
 
 

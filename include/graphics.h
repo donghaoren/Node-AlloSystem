@@ -131,7 +131,8 @@ namespace graphics {
         }
 
         // Measure text width.
-        virtual double measureText(const std::string& text) = 0;
+        virtual double measureText(const char* text) = 0;
+        double measureText(const std::string& text) { return measureText(text.c_str()); };
 
         virtual ~Paint() { }
     };
