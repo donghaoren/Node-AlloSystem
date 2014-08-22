@@ -357,7 +357,10 @@ namespace {
     public:
 
         Surface2D_Bitmap(int width, int height) {
-            bitmap.allocPixels(SkImageInfo::MakeN32(width, height, kPremul_SkAlphaType), 4 * width);
+            bool r = bitmap.allocPixels(SkImageInfo::MakeN32(width, height, kPremul_SkAlphaType), 4 * width);
+            if(!r) {
+                cout << "Warning: allocPixels failed." << endl;
+            }
             texture = 0;
         }
 
@@ -408,8 +411,10 @@ namespace {
 
         virtual void save(ByteStream* stream) {
             SkData* data = SkImageEncoder::EncodeData(bitmap, SkImageEncoder::kPNG_Type, 0);
-            stream->write(data->bytes(), data->size());
-            data->unref();
+            if(data) {
+                stream->write(data->bytes(), data->size());
+                data->unref();
+            }
         }
 
         virtual ~Surface2D_Bitmap() {

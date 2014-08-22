@@ -9,7 +9,6 @@ var s = new graphics.Surface2D(1000, 1000);
 var context = new graphics.GraphicalContext2D(s);
 var paint = context.paint();
 
-//s.save("test.png");
 allosphere.onFrame(function() {
     s.uploadTexture();
 });
@@ -39,6 +38,7 @@ allosphere.onDraw(function() {
     s.unbindTexture(2);
 });
 
+var saved = false;
 var t0 = new Date().getTime();
 setInterval(function() {
     // Update the bitmap image.
@@ -52,6 +52,8 @@ setInterval(function() {
     context.drawText("Hello World", 500, 500 + 100 * Math.sin(dt * 5), paint);
     paint.setTextSize(60);
     context.drawText("t = " + dt, 500, 600 + 100 * Math.sin(dt * 5), paint);
+    if(!saved) s.save("test.png");
+    saved = true;
 }, 10);
 
 // Main event loop for alloutil.
