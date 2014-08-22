@@ -41,14 +41,9 @@ namespace {
 
     SkMatrix convert_matrix(const Matrix3& mat) {
         SkMatrix r;
-        r.setScaleX(mat.a11);
-        r.setSkewX(mat.a12);
-        r.setScaleY(mat.a22);
-        r.setSkewY(mat.a21);
-        r.setTranslateX(mat.a13);
-        r.setTranslateY(mat.a23);
-        r.setPerspX(mat.a31);
-        r.setPerspY(mat.a32);
+        r.setAll(mat.a11, mat.a12, mat.a13,
+                 mat.a21, mat.a22, mat.a23,
+                 mat.a31, mat.a32, mat.a33);
         return r;
     }
 
@@ -109,6 +104,8 @@ namespace {
         Paint_Impl() {
             paint.setAntiAlias(true);
         }
+
+        Paint_Impl(const SkPaint& paint_) : paint(paint_) { }
 
         virtual void setMode(const PaintMode& mode) {
             switch(mode) {
@@ -214,6 +211,10 @@ namespace {
             typeface->unref();
         }
 
+        virtual Paint* clone() {
+            return new Paint_Impl(paint);
+        }
+
         // Measure text width.
         virtual double measureText(const char* text) {
             return paint.measureText(text, strlen(text));
@@ -310,21 +311,21 @@ namespace {
             canvas.resetMatrix();
         }
         // Save/load the current graphical state.
-        virtual State save() const {
+        virtual State getState() const {
             State s;
             s.transform = getTransform();
             return s;
         }
         // Load a saved state.
-        virtual void load(const State& state) {
+        virtual void setState(const State& state) {
             setTransform(state.transform);
         }
         // Push the graphical state.
-        virtual void push() {
+        virtual void save() {
             canvas.save();
         }
         // Pop the graphical state.
-        virtual void pop() {
+        virtual void restore() {
             canvas.restore();
         }
         // Destructor, unref the canvas.
@@ -360,8 +361,7 @@ namespace {
     public:
 
         Surface2D_Bitmap(int width, int height) {
-            bitmap.setConfig(SkBitmap::kARGB_8888_Config, width, height);
-            bitmap.allocPixels();
+            bitmap.allocPixels(SkImageInfo::MakeN32(width, height, kPremul_SkAlphaType));
             texture = 0;
         }
 
@@ -411,13 +411,9 @@ namespace {
         }
 
         virtual void save(ByteStream* stream) {
-            if(stream == 0) {
-                stream = ByteStream::OpenFile("test.png", "w");
-            }
-            ByteStreamWrapper w(stream);
-            if(!SkImageEncoder::EncodeStream(&w, bitmap, SkImageEncoder::kPNG_Type, 0)) {
-                cout << "Failed to save..." << endl;
-            }
+            SkData* data = SkImageEncoder::EncodeData(bitmap, SkImageEncoder::kPNG_Type, 0);
+            stream->write(data->bytes(), data->size());
+            data->unref();
         }
 
         virtual ~Surface2D_Bitmap() {

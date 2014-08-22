@@ -11,12 +11,14 @@ SET ( Skia_INCLUDE_DIRS
 
 SET ( Skia_LIBRARY_DIRS "${Skia_SOURCE_DIR}/out/Release" )
 
+# With skia commit: 3e42a4638559d71481ba598857f2d0c715c8d4b3
 SET ( Skia_LIBRARIES
   "${Skia_LIBRARY_DIRS}/libskia_core.a"
   "${Skia_LIBRARY_DIRS}/libskia_effects.a"
   "${Skia_LIBRARY_DIRS}/libskia_images.a"
   "${Skia_LIBRARY_DIRS}/libskia_utils.a"
   "${Skia_LIBRARY_DIRS}/libskia_opts.a"
+  "${Skia_LIBRARY_DIRS}/libskia_opts_sse4.a"
   "${Skia_LIBRARY_DIRS}/libskia_opts_ssse3.a"
   "${Skia_LIBRARY_DIRS}/libskia_ports.a"
   "${Skia_LIBRARY_DIRS}/libskia_sfnt.a"
@@ -28,6 +30,8 @@ IF(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
     FIND_LIBRARY(ApplicationServices_LIBRARY ApplicationServices )
     FIND_PACKAGE ( ZLIB )
     LIST ( APPEND Skia_LIBRARIES
+        "${Skia_LIBRARY_DIRS}/libetc1.a"
+        "${Skia_LIBRARY_DIRS}/libSkKTX.a"
         "${Skia_LIBRARY_DIRS}/libskflate.a"
         ${ApplicationServices_LIBRARY}
         ${ZLIB_LIBRARIES}
@@ -44,6 +48,8 @@ IF(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
     FIND_PACKAGE ( ZLIB )
 
     LIST ( APPEND Skia_LIBRARIES
+        "${Skia_LIBRARY_DIRS}/obj/gyp/libetc1.a"
+        "${Skia_LIBRARY_DIRS}/obj/gyp/libSkKTX.a"
         "${Skia_LIBRARY_DIRS}/obj/gyp/libskflate.a"
         ${FreeType_LIBRARIES}
         ${FontConfig_LIBRARIES}

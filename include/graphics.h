@@ -75,12 +75,12 @@ namespace graphics {
         virtual void reset() = 0;
 
         // Save/load the current graphical state.
-        virtual State save() const = 0;
-        virtual void load(const State& state) = 0;
+        virtual State getState() const = 0;
+        virtual void setState(const State& state) = 0;
 
         // Push and pop the graphical state.
-        virtual void push() = 0;
-        virtual void pop() = 0;
+        virtual void save() = 0;
+        virtual void restore() = 0;
 
         virtual ~GraphicalContext() { }
 
@@ -133,6 +133,8 @@ namespace graphics {
         // Measure text width.
         virtual double measureText(const char* text) = 0;
         double measureText(const std::string& text) { return measureText(text.c_str()); };
+
+        virtual Paint* clone() = 0;
 
         virtual ~Paint() { }
     };

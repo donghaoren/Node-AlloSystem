@@ -57,11 +57,11 @@ private:
     static v8::Handle<v8::Value> NODE_clear(const v8::Arguments& args);
     static v8::Handle<v8::Value> NODE_reset(const v8::Arguments& args);
 
-    // static v8::Handle<v8::Value> NODE_save(const v8::Arguments& args);
-    // static v8::Handle<v8::Value> NODE_load(const v8::Arguments& args);
+    // static v8::Handle<v8::Value> NODE_getState(const v8::Arguments& args);
+    // static v8::Handle<v8::Value> NODE_setState(const v8::Arguments& args);
 
-    static v8::Handle<v8::Value> NODE_push(const v8::Arguments& args);
-    static v8::Handle<v8::Value> NODE_pop(const v8::Arguments& args);
+    static v8::Handle<v8::Value> NODE_save(const v8::Arguments& args);
+    static v8::Handle<v8::Value> NODE_restore(const v8::Arguments& args);
 
     static v8::Persistent<v8::Function> constructor;
 };

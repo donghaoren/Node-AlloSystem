@@ -54,8 +54,8 @@ namespace {
     };
 }
 
-ByteStream* ByteStream::OpenFile(const std::string& path, const std::string& mode) {
-    return new FileStream(path.c_str(), mode.c_str());
+ByteStream* ByteStream::OpenFile(const char* path, const char* mode) {
+    return new FileStream(path, mode);
 }
 
 // std::string get_file_contents(const std::string& filename) {

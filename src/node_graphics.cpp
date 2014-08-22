@@ -3,6 +3,8 @@
 
 #include <graphics.h>
 
+#include <iostream>
+
 #include "node_graphics.h"
 
 using namespace v8;
@@ -98,8 +100,11 @@ v8::Handle<v8::Value> NODE_Surface2D::NODE_unbindTexture(const v8::Arguments& ar
 }
 
 v8::Handle<v8::Value> NODE_Surface2D::NODE_save(const v8::Arguments& args) {
+    String::Utf8Value str(args[0]);
     NODE_Surface2D* obj = ObjectWrap::Unwrap<NODE_Surface2D>(args.This());
-    obj->surface->save(0);
+    iv::ByteStream* stream = iv::ByteStream::OpenFile(std::string(*str, *str + str.length()), "w");
+    obj->surface->save(stream);
+    delete stream;
     return args.This();
 }
 
@@ -143,9 +148,9 @@ void NODE_GraphicalContext2D::Init(Handle<Object> exports) {
     // tpl->PrototypeTemplate()->Set(
     //     String::NewSymbol("load"), FunctionTemplate::New(NODE_load)->GetFunction());
     tpl->PrototypeTemplate()->Set(
-        String::NewSymbol("push"), FunctionTemplate::New(NODE_push)->GetFunction());
+        String::NewSymbol("save"), FunctionTemplate::New(NODE_save)->GetFunction());
     tpl->PrototypeTemplate()->Set(
-        String::NewSymbol("pop"), FunctionTemplate::New(NODE_pop)->GetFunction());
+        String::NewSymbol("restore"), FunctionTemplate::New(NODE_restore)->GetFunction());
 
     constructor = Persistent<Function>::New(tpl->GetFunction());
 
@@ -255,9 +260,6 @@ v8::Handle<v8::Value> NODE_GraphicalContext2D::NODE_concatTransform(const v8::Ar
     double d = args[3]->NumberValue();
     double e = args[4]->NumberValue();
     double f = args[5]->NumberValue();
-    // a c e
-    // b d f
-    // 0 0 1
     m.a11 = a; m.a12 = c; m.a13 = e;
     m.a21 = b; m.a22 = d; m.a23 = f;
     m.a31 = 0; m.a32 = 0; m.a33 = 1;
@@ -274,9 +276,6 @@ v8::Handle<v8::Value> NODE_GraphicalContext2D::NODE_setTransform(const v8::Argum
     double d = args[3]->NumberValue();
     double e = args[4]->NumberValue();
     double f = args[5]->NumberValue();
-    // a c e
-    // b d f
-    // 0 0 1
     m.a11 = a; m.a12 = c; m.a13 = e;
     m.a21 = b; m.a22 = d; m.a23 = f;
     m.a31 = 0; m.a32 = 0; m.a33 = 1;
@@ -323,15 +322,15 @@ v8::Handle<v8::Value> NODE_GraphicalContext2D::NODE_reset(const v8::Arguments& a
 //     return Undefined();
 // }
 
-v8::Handle<v8::Value> NODE_GraphicalContext2D::NODE_push(const v8::Arguments& args) {
+v8::Handle<v8::Value> NODE_GraphicalContext2D::NODE_save(const v8::Arguments& args) {
     NODE_GraphicalContext2D* self = ObjectWrap::Unwrap<NODE_GraphicalContext2D>(args.This());
-    self->context->push();
+    self->context->save();
     return args.This();
 }
 
-v8::Handle<v8::Value> NODE_GraphicalContext2D::NODE_pop(const v8::Arguments& args) {
+v8::Handle<v8::Value> NODE_GraphicalContext2D::NODE_restore(const v8::Arguments& args) {
     NODE_GraphicalContext2D* self = ObjectWrap::Unwrap<NODE_GraphicalContext2D>(args.This());
-    self->context->pop();
+    self->context->restore();
     return args.This();
 }
 
