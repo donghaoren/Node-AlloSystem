@@ -1,47 +1,18 @@
 var allosphere = require("node_allosphere");
+var graphics = require("node_graphics");
 var GL = allosphere.OpenGL;
+
 allosphere.initialize();
 
-// This is called before each frame.
-allosphere.onFrame(function() {
-});
-
-// Draw your stuff with OpenGL.
-allosphere.onDraw(function() {
-    GL.begin(GL.TRIANGLE_STRIP);
-    GL.color3f(1, 1, 1);
-    GL.vertex3f(-1,  1, -1);
-    GL.vertex3f(-1, -1, -1);
-    GL.vertex3f( 1,  1, -1);
-    GL.vertex3f( 1, -1, -1);
-    GL.end();
-});
-
-
-// Main event loop.
-setInterval(function() {
-    allosphere.tick();
-}, 10);
-
-var graphics = require("node_graphics");
-
 var s = new graphics.Surface2D(1000, 1000);
-console.log(s.width());
 
 var context = new graphics.GraphicalContext2D(s);
 var paint = context.paint();
 
-
-context.clear(255, 255, 255, 1);
-context.drawLine(0, 0, 1000, 1000, paint);
-paint.setTypeface("Arial", graphics.FONTSTYLE_NORMAL);
-paint.setTextSize(120);
-paint.setTextAlign(graphics.TEXTALIGN_CENTER);
-paint.setMode(graphics.PAINTMODE_FILL);
-context.drawText("Hello World", 500, 500, paint);
-
 //s.save("test.png");
-s.uploadTexture();
+allosphere.onFrame(function() {
+    s.uploadTexture();
+});
 
 // Draw your stuff with OpenGL.
 allosphere.onDraw(function() {
@@ -58,5 +29,32 @@ allosphere.onDraw(function() {
     GL.texCoord2f(1, 0); GL.normal3f(0, 0, 1); GL.vertex3f( 1,  1, -1);
     GL.end();
 
+    GL.begin(GL.QUADS);
+    GL.texCoord2f(1, 0); GL.normal3f(0, 0, 1); GL.vertex3f(-1,  1, 1);
+    GL.texCoord2f(1, 1); GL.normal3f(0, 0, 1); GL.vertex3f(-1, -1, 1);
+    GL.texCoord2f(0, 1); GL.normal3f(0, 0, 1); GL.vertex3f( 1, -1, 1);
+    GL.texCoord2f(0, 0); GL.normal3f(0, 0, 1); GL.vertex3f( 1,  1, 1);
+    GL.end();
+
     s.unbindTexture(2);
 });
+
+var t0 = new Date().getTime();
+setInterval(function() {
+    // Update the bitmap image.
+    var dt = (new Date().getTime() - t0) / 1000;
+    context.clear(255, 255, 255, 1);
+    context.drawLine(0, 0, 1000, 1000, paint);
+    paint.setTypeface("Arial", graphics.FONTSTYLE_NORMAL);
+    paint.setTextSize(120);
+    paint.setTextAlign(graphics.TEXTALIGN_CENTER);
+    paint.setMode(graphics.PAINTMODE_FILL);
+    context.drawText("Hello World", 500, 500 + 100 * Math.sin(dt * 5), paint);
+    paint.setTextSize(60);
+    context.drawText("t = " + dt, 500, 600 + 100 * Math.sin(dt * 5), paint);
+}, 10);
+
+// Main event loop for alloutil.
+setInterval(function() {
+    allosphere.tick();
+}, 10);

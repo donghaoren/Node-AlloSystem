@@ -357,7 +357,7 @@ namespace {
     public:
 
         Surface2D_Bitmap(int width, int height) {
-            bitmap.allocPixels(SkImageInfo::MakeN32(width, height, kPremul_SkAlphaType));
+            bitmap.allocPixels(SkImageInfo::MakeN32(width, height, kPremul_SkAlphaType), 4 * width);
             texture = 0;
         }
 
