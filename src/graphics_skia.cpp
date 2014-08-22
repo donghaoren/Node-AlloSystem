@@ -228,17 +228,11 @@ namespace {
         // Initialize with a bitmap.
         GraphicalContext_Impl(SkBitmap& bitmap)
           : canvas_ptr(new SkCanvas(bitmap)), canvas(*canvas_ptr) {
-            canvas.translate(bitmap.width() / 2.0, bitmap.height() / 2.0);
-            canvas.scale(1, -1);
-            matrix0 = getTransform();
         }
         // Initialize with a canvas pointer, add a reference to it.
         GraphicalContext_Impl(SkCanvas* canvas_ptr_, double width, double height)
           : canvas_ptr(canvas_ptr_), canvas(*canvas_ptr) {
             canvas.ref();
-            canvas.translate(width / 2.0, height / 2.0);
-            canvas.scale(1, -1);
-            matrix0 = getTransform();
         }
         // Create a new path.
         virtual Path* path() {
@@ -256,11 +250,11 @@ namespace {
         // Draw text.
         virtual void drawText(const char* text, double x, double y, Paint* paint_) {
             SkPaint& paint = dynamic_cast<Paint_Impl*>(paint_)->paint;
-            canvas.save();
-            canvas.translate(x, y);
-            canvas.scale(1, -1);
+            // canvas.save();
+            // canvas.translate(x, y);
+            // canvas.scale(1, -1);
             canvas.drawText(text, strlen(text), 0, 0, paint);
-            canvas.restore();
+            //canvas.restore();
         }
         // Draw line.
         virtual void drawLine(Vector3d p1, Vector3d p2, Paint* paint_) {
@@ -290,7 +284,7 @@ namespace {
         }
         // Set the transformation matrix.
         virtual void setTransform(const Matrix3& matrix) {
-            canvas.setMatrix(convert_matrix(matrix0 * matrix));
+            canvas.setMatrix(convert_matrix(matrix));
         }
         // Get the current transformation matrix.
         virtual Matrix3 getTransform() const {
@@ -313,7 +307,7 @@ namespace {
         }
         // Reset the graphical state.
         virtual void reset() {
-            setTransform(matrix0);
+            canvas.resetMatrix();
         }
         // Save/load the current graphical state.
         virtual State save() const {
