@@ -13,17 +13,17 @@ SET ( Skia_LIBRARY_DIRS "${Skia_SOURCE_DIR}/out/Release" )
 
 # With skia commit: 3e42a4638559d71481ba598857f2d0c715c8d4b3
 SET ( Skia_LIBRARIES
+  "${Skia_LIBRARY_DIRS}/libskia_pdf.a"
   "${Skia_LIBRARY_DIRS}/libskia_core.a"
   "${Skia_LIBRARY_DIRS}/libskia_effects.a"
   "${Skia_LIBRARY_DIRS}/libskia_images.a"
   "${Skia_LIBRARY_DIRS}/libskia_utils.a"
   "${Skia_LIBRARY_DIRS}/libskia_opts.a"
-  "${Skia_LIBRARY_DIRS}/libskia_opts_sse4.a"
   "${Skia_LIBRARY_DIRS}/libskia_opts_ssse3.a"
+  "${Skia_LIBRARY_DIRS}/libskia_opts_sse4.a"
   "${Skia_LIBRARY_DIRS}/libskia_ports.a"
   "${Skia_LIBRARY_DIRS}/libskia_sfnt.a"
   "${Skia_LIBRARY_DIRS}/libskia_skgpu.a"
-  "${Skia_LIBRARY_DIRS}/libskia_pdf.a"
 )
 
 IF(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
@@ -34,7 +34,6 @@ IF(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
         "${Skia_LIBRARY_DIRS}/libetc1.a"
         "${Skia_LIBRARY_DIRS}/libSkKTX.a"
         "${Skia_LIBRARY_DIRS}/libskflate.a"
-        "${Skia_LIBRARY_DIRS}/libflags.a"
         ${ZLIB_LIBRARIES}
         ${ApplicationServices_LIBRARY}
         ${AGL_LIBRARY}
