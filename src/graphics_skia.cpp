@@ -251,11 +251,7 @@ namespace {
         // Draw text.
         virtual void drawText(const char* text, double x, double y, Paint* paint_) {
             SkPaint& paint = dynamic_cast<Paint_Impl*>(paint_)->paint;
-            // canvas.save();
-            // canvas.translate(x, y);
-            // canvas.scale(1, -1);
-            canvas.drawText(text, strlen(text), 0, 0, paint);
-            //canvas.restore();
+            canvas.drawText(text, strlen(text), x, y, paint);
         }
         // Draw line.
         virtual void drawLine(Vector3d p1, Vector3d p2, Paint* paint_) {
