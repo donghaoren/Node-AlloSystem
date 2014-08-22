@@ -12,6 +12,7 @@
 #include <SkTypeface.h>
 #include <SkColorPriv.h>
 #include <SkGraphics.h>
+#include <SkSurface.h>
 
 #include <vector>
 #include <iostream>
@@ -232,7 +233,7 @@ namespace {
           : canvas_ptr(new SkCanvas(bitmap)), canvas(*canvas_ptr) {
         }
         // Initialize with a canvas pointer, add a reference to it.
-        GraphicalContext_Impl(SkCanvas* canvas_ptr_, double width, double height)
+        GraphicalContext_Impl(SkCanvas* canvas_ptr_)
           : canvas_ptr(canvas_ptr_), canvas(*canvas_ptr) {
             canvas.ref();
         }
@@ -390,12 +391,10 @@ namespace {
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
             // Strange problem in skia, need RGBA format in Mac, but BGRA in linux.
             // In Linux, comment out SK_SAMPLES_FOR_X in SkUserConfig.h to solve the RGB ordering problem.
-            //bitmap.lockPixels();
-            unsigned char* bmp = new unsigned char[width() * height() * 4];
-            memset(bmp, 128, width() * height() * 4);
+            bitmap.lockPixels();
+            unsigned char* bmp = (unsigned char*)bitmap.getPixels();
             glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width(), height(), 0, GL_RGBA, GL_UNSIGNED_BYTE, bmp);
-            //bitmap.unlockPixels();
-            delete [] bmp;
+            bitmap.unlockPixels();
 
             unbindTexture(0);
         }
@@ -424,6 +423,76 @@ namespace {
         }
 
         SkBitmap bitmap;
+        GLuint texture;
+    };
+
+    class Surface2D_Surface : public Surface2D {
+    public:
+
+        Surface2D_Surface(int width, int height) {
+            surface = SkSurface::NewRasterPMColor(width, height);
+            texture = 0;
+        }
+
+        // Width, height, stride.
+        virtual int width() const {
+            return surface->width();
+        }
+
+        virtual int height() const {
+            return surface->height();
+        }
+
+        virtual void bindTexture(unsigned int unit) {
+            if(!texture) {
+                glGenTextures(1, &texture);
+            }
+            glActiveTexture(GL_TEXTURE0 + unit);
+            glBindTexture(GL_TEXTURE_2D, texture);
+        }
+
+        virtual void uploadTexture() {
+            SkImageInfo info;
+            size_t row_bytes;
+            unsigned char* bmp = (unsigned char*)surface->peekPixels(&info, &row_bytes);
+
+            bindTexture(0);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width(), height(), 0, GL_RGBA, GL_UNSIGNED_BYTE, bmp);
+
+            unbindTexture(0);
+        }
+
+        virtual void unbindTexture(unsigned int unit) {
+            glActiveTexture(GL_TEXTURE0 + unit);
+            glBindTexture(GL_TEXTURE_2D, 0);
+            glDisable(GL_TEXTURE_2D);
+        }
+
+        virtual void save(ByteStream* stream) {
+            SkImage* img = surface->newImageSnapshot();
+            if(!img) return;
+            SkData* data = img->encode(SkImageEncoder::kPNG_Type);
+            if(!data) {
+                img->unref();
+                return;
+            }
+            stream->write(data->bytes(), data->size());
+            data->unref();
+            img->unref();
+        }
+
+        virtual ~Surface2D_Surface() {
+            if(surface) {
+                surface->unref();
+            }
+        }
+
+        SkSurface* surface;
         GLuint texture;
     };
 
@@ -485,7 +554,7 @@ namespace {
 
         // Create new 2D surface.
         virtual Surface2D* createSurface2D(int width, int height) {
-            return new Surface2D_Bitmap(width, height);
+            return new Surface2D_Surface(width, height);
         }
 
         virtual Surface2D* createPDFSurface2D(int width, int height) {
@@ -499,10 +568,15 @@ namespace {
                 GraphicalContext_Impl* r = new GraphicalContext_Impl(surface->bitmap);
                 return r;
             }
+            if(typeid(*surface_) == typeid(Surface2D_Surface)) {
+                Surface2D_Surface* surface = dynamic_cast<Surface2D_Surface*>(surface_);
+                GraphicalContext_Impl* r = new GraphicalContext_Impl(surface->surface->getCanvas());
+                return r;
+            }
             if(typeid(*surface_) == typeid(Surface2D_PDF)) {
                 Surface2D_PDF* surface = dynamic_cast<Surface2D_PDF*>(surface_);
                 SkCanvas* canvas = surface->document->beginPage(surface->width(), surface->height());
-                GraphicalContext_Impl* r = new GraphicalContext_Impl(canvas, surface->width(), surface->height());
+                GraphicalContext_Impl* r = new GraphicalContext_Impl(canvas);
                 return r;
             }
             throw std::invalid_argument("surface");
