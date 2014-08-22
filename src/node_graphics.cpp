@@ -24,8 +24,6 @@ void NODE_Surface2D::Init(Handle<Object> exports) {
     tpl->PrototypeTemplate()->Set(
         String::NewSymbol("height"), FunctionTemplate::New(NODE_height)->GetFunction());
     tpl->PrototypeTemplate()->Set(
-        String::NewSymbol("stride"), FunctionTemplate::New(NODE_stride)->GetFunction());
-    tpl->PrototypeTemplate()->Set(
         String::NewSymbol("bindTexture"), FunctionTemplate::New(NODE_bindTexture)->GetFunction());
     tpl->PrototypeTemplate()->Set(
         String::NewSymbol("uploadTexture"), FunctionTemplate::New(NODE_uploadTexture)->GetFunction());
@@ -74,11 +72,6 @@ v8::Handle<v8::Value> NODE_Surface2D::NODE_width(const v8::Arguments& args) {
 v8::Handle<v8::Value> NODE_Surface2D::NODE_height(const v8::Arguments& args) {
     NODE_Surface2D* obj = ObjectWrap::Unwrap<NODE_Surface2D>(args.This());
     return Uint32::New(obj->surface->height());
-}
-
-v8::Handle<v8::Value> NODE_Surface2D::NODE_stride(const v8::Arguments& args) {
-    NODE_Surface2D* obj = ObjectWrap::Unwrap<NODE_Surface2D>(args.This());
-    return Uint32::New(obj->surface->stride());
 }
 
 v8::Handle<v8::Value> NODE_Surface2D::NODE_bindTexture(const v8::Arguments& args) {

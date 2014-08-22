@@ -146,11 +146,6 @@ namespace graphics {
         // Width, height, stride.
         virtual int width() const = 0;
         virtual int height() const = 0;
-        virtual int stride() const = 0;
-
-        // Get a pointer to the pixels.
-        // RGBA, unsigned byte format.
-        virtual unsigned char* pixels() = 0;
 
         // Create a OpenGL texture for the surface.
         virtual void bindTexture(unsigned int unit) = 0;

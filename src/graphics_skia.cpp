@@ -11,6 +11,7 @@
 #include <SkMatrix.h>
 #include <SkTypeface.h>
 #include <SkColorPriv.h>
+#include <SkGraphics.h>
 
 #include <vector>
 #include <iostream>
@@ -357,7 +358,7 @@ namespace {
     public:
 
         Surface2D_Bitmap(int width, int height) {
-            bool r = bitmap.allocPixels(SkImageInfo::MakeN32(width, height, kPremul_SkAlphaType), 4 * width);
+            bool r = bitmap.allocPixels(SkImageInfo::Make(width, height, kRGBA_8888_SkColorType, kUnpremul_SkAlphaType));
             if(!r) {
                 cout << "Warning: allocPixels failed." << endl;
             }
@@ -371,24 +372,6 @@ namespace {
 
         virtual int height() const {
             return bitmap.height();
-        }
-
-        virtual int stride() const {
-            return bitmap.rowBytes();
-        }
-
-        virtual void lock() {
-            bitmap.lockPixels();
-        }
-
-        virtual void unlock() {
-            bitmap.unlockPixels();
-        }
-
-        // Get a pointer to the pixels.
-        // RGBA, unsigned byte format.
-        virtual unsigned char* pixels() {
-            return (unsigned char*)bitmap.getPixels();
         }
 
         virtual void bindTexture(unsigned int unit) {
@@ -421,10 +404,13 @@ namespace {
         }
 
         virtual void save(ByteStream* stream) {
-            SkData* data = SkImageEncoder::EncodeData(bitmap, SkImageEncoder::kPNG_Type, 0);
+            SkData* data = SkImageEncoder::EncodeData(bitmap, SkImageEncoder::kPNG_Type, SkImageEncoder::kDefaultQuality);
             if(data) {
                 stream->write(data->bytes(), data->size());
                 data->unref();
+            } else {
+                cout << bitmap.width() << ", " << bitmap.height() << ", " << bitmap.rowBytes() << endl;
+                cout << "Warning: unable to save." << endl;
             }
         }
 
@@ -453,16 +439,6 @@ namespace {
 
         virtual int height() const {
             return pdf_height;
-        }
-
-        virtual int stride() const {
-            throw not_supported();
-        }
-
-        // Get a pointer to the pixels.
-        // RGBA, unsigned byte format.
-        virtual unsigned char* pixels() {
-            throw not_supported();
         }
 
         virtual void bindTexture(unsigned int unit) {
@@ -497,6 +473,12 @@ namespace {
 
     class GraphicalBackend_Skia_Impl : public GraphicalBackend {
     public:
+        GraphicalBackend_Skia_Impl() {
+            SkGraphics::Init();
+        }
+        ~GraphicalBackend_Skia_Impl() {
+            SkGraphics::Term();
+        }
 
         // Create new 2D surface.
         virtual Surface2D* createSurface2D(int width, int height) {

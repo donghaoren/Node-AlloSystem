@@ -28,13 +28,16 @@ SET ( Skia_LIBRARIES
 
 IF(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
     FIND_LIBRARY(ApplicationServices_LIBRARY ApplicationServices )
+    FIND_LIBRARY(AGL_LIBRARY AGL )
     FIND_PACKAGE ( ZLIB )
     LIST ( APPEND Skia_LIBRARIES
         "${Skia_LIBRARY_DIRS}/libetc1.a"
         "${Skia_LIBRARY_DIRS}/libSkKTX.a"
         "${Skia_LIBRARY_DIRS}/libskflate.a"
-        ${ApplicationServices_LIBRARY}
+        "${Skia_LIBRARY_DIRS}/libflags.a"
         ${ZLIB_LIBRARIES}
+        ${ApplicationServices_LIBRARY}
+        ${AGL_LIBRARY}
     )
   ENDIF ( )
 

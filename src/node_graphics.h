@@ -18,7 +18,6 @@ private:
 
     static v8::Handle<v8::Value> NODE_width(const v8::Arguments& args);
     static v8::Handle<v8::Value> NODE_height(const v8::Arguments& args);
-    static v8::Handle<v8::Value> NODE_stride(const v8::Arguments& args);
     static v8::Handle<v8::Value> NODE_bindTexture(const v8::Arguments& args);
     static v8::Handle<v8::Value> NODE_uploadTexture(const v8::Arguments& args);
     static v8::Handle<v8::Value> NODE_unbindTexture(const v8::Arguments& args);

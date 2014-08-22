@@ -43,8 +43,9 @@ var t0 = new Date().getTime();
 setInterval(function() {
     // Update the bitmap image.
     var dt = (new Date().getTime() - t0) / 1000;
-    context.clear(255, 255, 255, 1);
+    context.clear(0, 0, 0, 1);
     context.drawLine(0, 0, 1000, 1000, paint);
+    paint.setColor(0, 255, 0, 1);
     paint.setTypeface("Arial", graphics.FONTSTYLE_NORMAL);
     paint.setTextSize(120);
     paint.setTextAlign(graphics.TEXTALIGN_CENTER);
@@ -52,8 +53,6 @@ setInterval(function() {
     context.drawText("Hello World", 500, 500 + 100 * Math.sin(dt * 5), paint);
     paint.setTextSize(60);
     context.drawText("t = " + dt, 500, 600 + 100 * Math.sin(dt * 5), paint);
-    if(!saved) s.save("test.png");
-    saved = true;
 }, 10);
 
 // Main event loop for alloutil.
