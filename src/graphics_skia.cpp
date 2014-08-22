@@ -377,6 +377,14 @@ namespace {
             return bitmap.rowBytes();
         }
 
+        virtual void lock() {
+            bitmap.lockPixels();
+        }
+
+        virtual void unlock() {
+            bitmap.unlockPixels();
+        }
+
         // Get a pointer to the pixels.
         // RGBA, unsigned byte format.
         virtual unsigned char* pixels() {
@@ -399,7 +407,10 @@ namespace {
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
             // Strange problem in skia, need RGBA format in Mac, but BGRA in linux.
             // In Linux, comment out SK_SAMPLES_FOR_X in SkUserConfig.h to solve the RGB ordering problem.
-            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width(), height(), 0, GL_RGBA, GL_UNSIGNED_BYTE, pixels());
+            bitmap.lockPixels();
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width(), height(), 0, GL_RGBA, GL_UNSIGNED_BYTE, bitmap.getPixels());
+            bitmap.unlockPixels();
+
             unbindTexture(0);
         }
 
