@@ -390,9 +390,12 @@ namespace {
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
             // Strange problem in skia, need RGBA format in Mac, but BGRA in linux.
             // In Linux, comment out SK_SAMPLES_FOR_X in SkUserConfig.h to solve the RGB ordering problem.
-            bitmap.lockPixels();
-            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width(), height(), 0, GL_RGBA, GL_UNSIGNED_BYTE, bitmap.getPixels());
-            bitmap.unlockPixels();
+            //bitmap.lockPixels();
+            unsigned char* bmp = new unsigned char[width() * height() * 4];
+            memset(bmp, 128, width() * height() * 4);
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width(), height(), 0, GL_RGBA, GL_UNSIGNED_BYTE, bmp);
+            //bitmap.unlockPixels();
+            delete [] bmp;
 
             unbindTexture(0);
         }
