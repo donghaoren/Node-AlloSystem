@@ -65,8 +65,9 @@ INCLUDE_DIRECTORIES (
 
   FIND_PACKAGE ( Skia )
   FIND_PACKAGE ( OpenGL )
+  FIND_PACKAGE ( GLEW )
 
-  INCLUDE_DIRECTORIES ( ${Skia_INCLUDE_DIRS} )
+  INCLUDE_DIRECTORIES ( ${Skia_INCLUDE_DIRS} ${OPENGL_INCLUDE_DIRS} ${GLEW_INCLUDE_DIRS} )
 
   ADD_LIBRARY ( node-graphics SHARED
     src/graphics_skia.cpp
@@ -77,6 +78,7 @@ INCLUDE_DIRECTORIES (
     LINK_PRIVATE
       ${Skia_LIBRARIES}
       ${OPENGL_LIBRARIES}
+      ${GLEW_LIBRARIES}
   )
 
 #----------------------------------------------------------------------------------------------------------------------
