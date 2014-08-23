@@ -15,24 +15,28 @@ allosphere.onFrame(function() {
 
 // Draw your stuff with OpenGL.
 allosphere.onDraw(function() {
+    GL.enable(GL.BLEND);
+    GL.blendFunc(GL.SRC_ALPHA, GL.ONE_MINUS_SRC_ALPHA);
+
     s.bindTexture(2);
 
-    allosphere.shaderUniformf("texture", 1.0);
+    allosphere.shaderUniformf("texture", 1);
     allosphere.shaderUniformi("texture0", 2);
-    allosphere.shaderUniformf("lighting", 0.1);
+    allosphere.shaderUniformf("lighting", 0);
+
+
+    GL.begin(GL.QUADS);
+    GL.texCoord2f(0, 0); GL.normal3f(0, 0, 1); GL.vertex3f(-2,  2, -1.5);
+    GL.texCoord2f(0, 1); GL.normal3f(0, 0, 1); GL.vertex3f(-2, -2, -1.5);
+    GL.texCoord2f(1, 1); GL.normal3f(0, 0, 1); GL.vertex3f( 2, -2, -1.5);
+    GL.texCoord2f(1, 0); GL.normal3f(0, 0, 1); GL.vertex3f( 2,  2, -1.5);
+    GL.end();
 
     GL.begin(GL.QUADS);
     GL.texCoord2f(0, 0); GL.normal3f(0, 0, 1); GL.vertex3f(-1,  1, -1);
     GL.texCoord2f(0, 1); GL.normal3f(0, 0, 1); GL.vertex3f(-1, -1, -1);
     GL.texCoord2f(1, 1); GL.normal3f(0, 0, 1); GL.vertex3f( 1, -1, -1);
     GL.texCoord2f(1, 0); GL.normal3f(0, 0, 1); GL.vertex3f( 1,  1, -1);
-    GL.end();
-
-    GL.begin(GL.QUADS);
-    GL.texCoord2f(1, 0); GL.normal3f(0, 0, 1); GL.vertex3f(-1,  1, 1);
-    GL.texCoord2f(1, 1); GL.normal3f(0, 0, 1); GL.vertex3f(-1, -1, 1);
-    GL.texCoord2f(0, 1); GL.normal3f(0, 0, 1); GL.vertex3f( 1, -1, 1);
-    GL.texCoord2f(0, 0); GL.normal3f(0, 0, 1); GL.vertex3f( 1,  1, 1);
     GL.end();
 
     s.unbindTexture(2);
@@ -43,8 +47,10 @@ var t0 = new Date().getTime();
 setInterval(function() {
     // Update the bitmap image.
     var dt = (new Date().getTime() - t0) / 1000;
-    context.clear(0, 0, 0, 1);
-    context.drawLine(0, 0, 1000, 1000, paint);
+    context.clear(255, 255, 255, 0.5);
+    paint.setMode(graphics.PAINTMODE_STROKE);
+    paint.setStrokeWidth(10);
+    context.drawCircle(500, 500, 400, paint);
     paint.setColor(0, 255, 0, 1);
     paint.setTypeface("Arial", graphics.FONTSTYLE_NORMAL);
     paint.setTextSize(120);

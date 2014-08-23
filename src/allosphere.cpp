@@ -19,7 +19,7 @@ namespace iv { namespace al {
         ApplicationImpl() {
             delegate = NULL;
 
-            light.ambient(::al::Color(0.4, 0.4, 0.4, 1.0));
+            light.ambient(::al::Color(0.4, 0.4, 0.4, 0.1));
             light.pos(5, 5, 5);
         }
 
@@ -75,6 +75,38 @@ namespace iv { namespace al {
         virtual void onDraw(::al::Graphics& g) {
             light();
             if(delegate) delegate->onDraw();
+        }
+
+        virtual std::string fragmentCode1() {
+            return AL_STRINGIFY(
+                uniform float lighting;
+                uniform float texture;
+                uniform sampler2D texture0;
+                varying vec4 color;
+                varying vec3 normal, lightDir, eyeVec;
+                void main() {
+
+                    vec4 colorMixed;
+                    if( texture > 0.0){
+                        vec4 textureColor = texture2D(texture0, gl_TexCoord[0].st);
+                        colorMixed = mix(color, textureColor, texture);
+                    }else{
+                        colorMixed = color;
+                    }
+
+                    vec4 final_color = colorMixed * gl_LightSource[0].ambient;
+                    vec3 N = normalize(normal);
+                    vec3 L = lightDir;
+                    float lambertTerm = max(dot(N, L), 0.0);
+                    final_color += gl_LightSource[0].diffuse * colorMixed * lambertTerm;
+                    vec3 E = eyeVec;
+                    vec3 R = reflect(-L, N);
+                    float spec = pow(max(dot(R, E), 0.0), 0.9 + 1e-20);
+                    final_color += gl_LightSource[0].specular * spec;
+                    gl_FragColor = mix(colorMixed, final_color, lighting);
+                    gl_FragColor.a = 0.5;
+                }
+            );
         }
 
         ::al::Light light;

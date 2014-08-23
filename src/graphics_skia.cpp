@@ -302,7 +302,7 @@ namespace {
         }
         // Clear the canvas.
         virtual void clear(const Color& color) {
-            canvas.drawColor(convert_color(color));
+            canvas.clear(convert_color(color));
         }
         // Reset the graphical state.
         virtual void reset() {
@@ -355,84 +355,85 @@ namespace {
 
     };
 
-    class Surface2D_Bitmap : public Surface2D {
-    public:
+    // class Surface2D_Bitmap : public Surface2D {
+    // public:
 
-        Surface2D_Bitmap(int width, int height) {
-            bool r = bitmap.allocPixels(SkImageInfo::Make(width, height, kRGBA_8888_SkColorType, kUnpremul_SkAlphaType));
-            if(!r) {
-                throw std::invalid_argument("cannot create 2D bitmap.");
-            }
-            texture = 0;
-        }
+    //     Surface2D_Bitmap(int width, int height) {
+    //         bool r = bitmap.allocPixels(SkImageInfo::Make(width, height, kRGBA_8888_SkColorType, kUnpremul_SkAlphaType));
+    //         if(!r) {
+    //             throw std::invalid_argument("cannot create 2D bitmap.");
+    //         }
+    //         texture = 0;
+    //     }
 
-        // Width, height, stride.
-        virtual int width() const {
-            return bitmap.width();
-        }
+    //     // Width, height, stride.
+    //     virtual int width() const {
+    //         return bitmap.width();
+    //     }
 
-        virtual int height() const {
-            return bitmap.height();
-        }
+    //     virtual int height() const {
+    //         return bitmap.height();
+    //     }
 
-        virtual void bindTexture(unsigned int unit) {
-            if(!texture) {
-                glGenTextures(1, &texture);
-            }
-            glActiveTexture(GL_TEXTURE0 + unit);
-            glBindTexture(GL_TEXTURE_2D, texture);
-        }
+    //     virtual void bindTexture(unsigned int unit) {
+    //         if(!texture) {
+    //             glGenTextures(1, &texture);
+    //         }
+    //         glActiveTexture(GL_TEXTURE0 + unit);
+    //         glBindTexture(GL_TEXTURE_2D, texture);
+    //     }
 
-        virtual void uploadTexture() {
-            bindTexture(0);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-            // Strange problem in skia, need RGBA format in Mac, but BGRA in linux.
-            // In Linux, comment out SK_SAMPLES_FOR_X in SkUserConfig.h to solve the RGB ordering problem.
-            bitmap.lockPixels();
-            unsigned char* bmp = (unsigned char*)bitmap.getPixels();
-            int total_sum = 0;
-            for(int i = 0; i < width() * height() * 4; i++) total_sum += bmp[i];
-  cout << "Sum: " << total_sum << endl;
-            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width(), height(), 0, GL_RGBA, GL_UNSIGNED_BYTE, bmp);
-            bitmap.unlockPixels();
+    //     virtual void uploadTexture() {
+    //         bindTexture(0);
+    //         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
+    //         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
+    //         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    //         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+    //         // Strange problem in skia, need RGBA format in Mac, but BGRA in linux.
+    //         // In Linux, comment out SK_SAMPLES_FOR_X in SkUserConfig.h to solve the RGB ordering problem.
+    //         bitmap.lockPixels();
+    //         unsigned char* bmp = (unsigned char*)bitmap.getPixels();
+    //         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width(), height(), 0, GL_RGBA, GL_UNSIGNED_BYTE, bmp);
+    //         bitmap.unlockPixels();
 
-            unbindTexture(0);
-        }
+    //         glGenerateMipmap(GL_TEXTURE_2D);
 
-        virtual void unbindTexture(unsigned int unit) {
-            glActiveTexture(GL_TEXTURE0 + unit);
-            glBindTexture(GL_TEXTURE_2D, 0);
-            glDisable(GL_TEXTURE_2D);
-        }
+    //         unbindTexture(0);
+    //     }
 
-        virtual void save(ByteStream* stream) {
-            SkData* data = SkImageEncoder::EncodeData(bitmap, SkImageEncoder::kPNG_Type, SkImageEncoder::kDefaultQuality);
-            if(data) {
-                stream->write(data->bytes(), data->size());
-                data->unref();
-            } else {
-                cout << bitmap.width() << ", " << bitmap.height() << ", " << bitmap.rowBytes() << endl;
-                cout << "Warning: unable to save." << endl;
-            }
-        }
+    //     virtual void unbindTexture(unsigned int unit) {
+    //         glActiveTexture(GL_TEXTURE0 + unit);
+    //         glBindTexture(GL_TEXTURE_2D, 0);
+    //         glDisable(GL_TEXTURE_2D);
+    //     }
 
-        virtual ~Surface2D_Bitmap() {
-            if(texture) {
-                glDeleteTextures(1, &texture);
-            }
-        }
+    //     virtual void save(ByteStream* stream) {
+    //         SkData* data = SkImageEncoder::EncodeData(bitmap, SkImageEncoder::kPNG_Type, SkImageEncoder::kDefaultQuality);
+    //         if(data) {
+    //             stream->write(data->bytes(), data->size());
+    //             data->unref();
+    //         } else {
+    //             cout << bitmap.width() << ", " << bitmap.height() << ", " << bitmap.rowBytes() << endl;
+    //             cout << "Warning: unable to save." << endl;
+    //         }
+    //     }
 
-        SkBitmap bitmap;
-        GLuint texture;
-    };
+    //     virtual ~Surface2D_Bitmap() {
+    //         if(texture) {
+    //             glDeleteTextures(1, &texture);
+    //         }
+    //     }
+
+    //     SkBitmap bitmap;
+    //     GLuint texture;
+    // };
 
     class Surface2D_Surface : public Surface2D {
     public:
 
         Surface2D_Surface(int width, int height) {
+            // Seems the NewRaster will call SkMallocPixelRef::NewAllocate, which only accepts kN32_SkColorType,
+            // so we need to ensure that kRGBA_8888_SkColorType == kN32_SkColorType.
             SkImageInfo info = SkImageInfo::Make(width, height, kRGBA_8888_SkColorType, kUnpremul_SkAlphaType);
             surface = SkSurface::NewRaster(info);
             if(!surface) {
@@ -462,18 +463,20 @@ namespace {
             SkImageInfo info;
             size_t row_bytes;
             unsigned char* bmp = (unsigned char*)surface->peekPixels(&info, &row_bytes);
-            if(!bmp) {
-                return;
-            } else {
-cout << row_bytes << " " << info.width() << " " << info.height() << endl;
-            }
+            if(!bmp) return;
+
             bindTexture(0);
+
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+
+            cout << (int)bmp[0] << " " << (int)bmp[1] << " " << (int)bmp[2] << " " << (int)bmp[3] << " " << endl;
 
             glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width(), height(), 0, GL_RGBA, GL_UNSIGNED_BYTE, bmp);
+
+            glGenerateMipmap(GL_TEXTURE_2D);
 
             unbindTexture(0);
         }
@@ -574,11 +577,11 @@ cout << row_bytes << " " << info.width() << " " << info.height() << endl;
 
         // Create 2D graphical context for a surface.
         virtual GraphicalContext* createGraphicalContext(Surface2D* surface_) {
-            if(typeid(*surface_) == typeid(Surface2D_Bitmap)) {
-                Surface2D_Bitmap* surface = dynamic_cast<Surface2D_Bitmap*>(surface_);
-                GraphicalContext_Impl* r = new GraphicalContext_Impl(surface->bitmap);
-                return r;
-            }
+            // if(typeid(*surface_) == typeid(Surface2D_Bitmap)) {
+            //     Surface2D_Bitmap* surface = dynamic_cast<Surface2D_Bitmap*>(surface_);
+            //     GraphicalContext_Impl* r = new GraphicalContext_Impl(surface->bitmap);
+            //     return r;
+            // }
             if(typeid(*surface_) == typeid(Surface2D_Surface)) {
                 Surface2D_Surface* surface = dynamic_cast<Surface2D_Surface*>(surface_);
                 GraphicalContext_Impl* r = new GraphicalContext_Impl(surface->surface->getCanvas());

@@ -10,7 +10,7 @@
   SET ( CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_CURRENT_SOURCE_DIR}/cmake_modules" )
 
   # Enable C++11 support (mandatory)
-  SET ( CMAKE_CXX_FLAGS "-std=c++11 -fPIE ${CMAKE_CXX_FLAGS}" )
+  SET ( CMAKE_CXX_FLAGS "-std=c++11 ${CMAKE_CXX_FLAGS}" )
 
   SET ( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Werror -Wno-error=unused-variable -Wno-deprecated-declarations" )
 
