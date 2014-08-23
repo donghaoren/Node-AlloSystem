@@ -11,6 +11,15 @@ Dependencies
 2. Graphics library: Skia
     Get it from https://code.google.com/p/skia/
     Put it here: /opt/build/skia
+    Checkout the commit: 7f8c54cefefb855bb0d85d09ce5282ba7e9e352a
+    Change one thing:
+        In include/config/SkUserConfig.h, comment out these lines:
+         #ifdef SK_SAMPLES_FOR_X
+             #define SK_R32_SHIFT    16
+             #define SK_G32_SHIFT    8
+             #define SK_B32_SHIFT    0
+             #define SK_A32_SHIFT    24
+         #endif
     Build with:
         ./gyp_skia
         ninja -C out/Release
