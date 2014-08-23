@@ -13,7 +13,7 @@
 #include <SkColorPriv.h>
 #include <SkGraphics.h>
 #include <SkSurface.h>
-
+#include <SkMallocPixelRef.h>
 #include <vector>
 #include <iostream>
 
@@ -361,7 +361,7 @@ namespace {
         Surface2D_Bitmap(int width, int height) {
             bool r = bitmap.allocPixels(SkImageInfo::Make(width, height, kRGBA_8888_SkColorType, kUnpremul_SkAlphaType));
             if(!r) {
-                cout << "Warning: allocPixels failed." << endl;
+                throw std::invalid_argument("cannot create 2D bitmap.");
             }
             texture = 0;
         }
@@ -393,6 +393,9 @@ namespace {
             // In Linux, comment out SK_SAMPLES_FOR_X in SkUserConfig.h to solve the RGB ordering problem.
             bitmap.lockPixels();
             unsigned char* bmp = (unsigned char*)bitmap.getPixels();
+            int total_sum = 0;
+            for(int i = 0; i < width() * height() * 4; i++) total_sum += bmp[i];
+  cout << "Sum: " << total_sum << endl;
             glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width(), height(), 0, GL_RGBA, GL_UNSIGNED_BYTE, bmp);
             bitmap.unlockPixels();
 
@@ -430,7 +433,11 @@ namespace {
     public:
 
         Surface2D_Surface(int width, int height) {
-            surface = SkSurface::NewRasterPMColor(width, height);
+            SkImageInfo info = SkImageInfo::Make(width, height, kRGBA_8888_SkColorType, kUnpremul_SkAlphaType);
+            surface = SkSurface::NewRaster(info);
+            if(!surface) {
+                throw std::invalid_argument("cannot create 2D surface.");
+            }
             texture = 0;
         }
 
@@ -455,7 +462,11 @@ namespace {
             SkImageInfo info;
             size_t row_bytes;
             unsigned char* bmp = (unsigned char*)surface->peekPixels(&info, &row_bytes);
-
+            if(!bmp) {
+                return;
+            } else {
+cout << row_bytes << " " << info.width() << " " << info.height() << endl;
+            }
             bindTexture(0);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
