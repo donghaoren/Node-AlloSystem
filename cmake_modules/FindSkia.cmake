@@ -53,8 +53,8 @@ IF(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
     FIND_PACKAGE ( OpenGL )
     FIND_PACKAGE ( Threads )
     FIND_PACKAGE ( PNG )
-    FIND_PACKAGE ( JPEG )
     FIND_PACKAGE ( ZLIB )
+    FIND_PACKAGE ( GIF )
 
     LIST ( APPEND Skia_LIBRARIES
         "${Skia_LIBRARY_DIRS}/obj/gyp/libetc1.a"
@@ -70,6 +70,7 @@ IF(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
         ${FontConfig_LIBRARIES}
         ${OPENGL_LIBRARIES}
         ${PNG_LIBRARIES}
+        ${GIF_LIBRARIES}
         ${ZLIB_LIBRARIES}
         ${CMAKE_THREAD_LIBS_INIT}
     )
