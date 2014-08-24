@@ -74,6 +74,9 @@ namespace graphics {
         // Reset the graphical state.
         virtual void reset() = 0;
 
+        // Process pending operations.
+        virtual void flush() = 0;
+
         // Save/load the current graphical state.
         virtual State getState() const = 0;
         virtual void setState(const State& state) = 0;

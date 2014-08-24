@@ -3,6 +3,6 @@ SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
 export DYLD_LIBRARY_PATH=$DYLD_LIBRARY_PATH:$SCRIPT_DIR/native/lib
 export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$SCRIPT_DIR/native/lib
-export NODE_PATH=$SCRIPT_DIR/build/Release
+export NODE_PATH=$NODE_PATH:$SCRIPT_DIR/build/Release
 
 node $@

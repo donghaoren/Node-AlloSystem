@@ -66,6 +66,8 @@ private:
     static v8::Handle<v8::Value> NODE_save(const v8::Arguments& args);
     static v8::Handle<v8::Value> NODE_restore(const v8::Arguments& args);
 
+    static v8::Handle<v8::Value> NODE_flush(const v8::Arguments& args);
+
     static v8::Persistent<v8::Function> constructor;
 };
 
@@ -106,6 +108,7 @@ public:
 
 private:
     explicit NODE_Paint2D(NODE_GraphicalContext2D* context);
+    explicit NODE_Paint2D(NODE_Paint2D* paint);
     ~NODE_Paint2D();
 
     static v8::Handle<v8::Value> New(const v8::Arguments& args);
@@ -121,6 +124,8 @@ private:
     static v8::Handle<v8::Value> NODE_setTypeface(const v8::Arguments& args);
 
     static v8::Handle<v8::Value> NODE_measureText(const v8::Arguments& args);
+
+    static v8::Handle<v8::Value> NODE_clone(const v8::Arguments& args);
 
     static v8::Persistent<v8::Function> constructor;
 };

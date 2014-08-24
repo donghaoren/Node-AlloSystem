@@ -328,6 +328,12 @@ namespace {
         virtual void restore() {
             canvas.restore();
         }
+
+        // Flush pending operations.
+        virtual void flush() {
+            canvas.flush();
+        }
+
         // Destructor, unref the canvas.
         virtual ~GraphicalContext_Impl() {
             canvas.unref();
@@ -465,7 +471,10 @@ namespace {
             SkImageInfo info;
             size_t row_bytes;
             unsigned char* bmp = (unsigned char*)surface->peekPixels(&info, &row_bytes);
-            if(!bmp) return;
+            if(!bmp) {
+                cout << "Failed to peekPixels()" << endl;
+                return;
+            }
 
             bindTexture(0);
 

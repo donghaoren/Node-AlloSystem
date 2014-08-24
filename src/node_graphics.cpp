@@ -149,6 +149,8 @@ void NODE_GraphicalContext2D::Init(Handle<Object> exports) {
         String::NewSymbol("save"), FunctionTemplate::New(NODE_save)->GetFunction());
     tpl->PrototypeTemplate()->Set(
         String::NewSymbol("restore"), FunctionTemplate::New(NODE_restore)->GetFunction());
+    tpl->PrototypeTemplate()->Set(
+        String::NewSymbol("flush"), FunctionTemplate::New(NODE_flush)->GetFunction());
 
     constructor = Persistent<Function>::New(tpl->GetFunction());
 
@@ -332,6 +334,12 @@ v8::Handle<v8::Value> NODE_GraphicalContext2D::NODE_restore(const v8::Arguments&
     return args.This();
 }
 
+v8::Handle<v8::Value> NODE_GraphicalContext2D::NODE_flush(const v8::Arguments& args) {
+    NODE_GraphicalContext2D* self = ObjectWrap::Unwrap<NODE_GraphicalContext2D>(args.This());
+    self->context->flush();
+    return args.This();
+}
+
 void NODE_Path2D::Init(Handle<Object> exports) {
     // Prepare constructor template
     Local<FunctionTemplate> tpl = FunctionTemplate::New(New);
@@ -441,6 +449,8 @@ void NODE_Paint2D::Init(Handle<Object> exports) {
         String::NewSymbol("setTypeface"), FunctionTemplate::New(NODE_setTypeface)->GetFunction());
     tpl->PrototypeTemplate()->Set(
         String::NewSymbol("measureText"), FunctionTemplate::New(NODE_measureText)->GetFunction());
+    tpl->PrototypeTemplate()->Set(
+        String::NewSymbol("clone"), FunctionTemplate::New(NODE_clone)->GetFunction());
 
     constructor = Persistent<Function>::New(tpl->GetFunction());
 
@@ -450,6 +460,9 @@ void NODE_Paint2D::Init(Handle<Object> exports) {
 
 NODE_Paint2D::NODE_Paint2D(NODE_GraphicalContext2D* context) {
     paint = context->context->paint();
+}
+NODE_Paint2D::NODE_Paint2D(NODE_Paint2D* paint_) {
+    paint = paint_->paint->clone();
 }
 
 NODE_Paint2D::~NODE_Paint2D() {
@@ -461,10 +474,17 @@ v8::Handle<v8::Value> NODE_Paint2D::New(const v8::Arguments& args) {
 
     if(args.IsConstructCall()) {
         // Invoked as constructor: `new MyObject(...)`
-        NODE_GraphicalContext2D* context = node::ObjectWrap::Unwrap<NODE_GraphicalContext2D>(args[0]->ToObject());
-        NODE_Paint2D* obj = new NODE_Paint2D(context);
-        obj->Wrap(args.This());
-        return args.This();
+        if(args.Length() == 1) {
+            NODE_GraphicalContext2D* context = node::ObjectWrap::Unwrap<NODE_GraphicalContext2D>(args[0]->ToObject());
+            NODE_Paint2D* obj = new NODE_Paint2D(context);
+            obj->Wrap(args.This());
+            return args.This();
+        } else {
+            NODE_Paint2D* paint = node::ObjectWrap::Unwrap<NODE_Paint2D>(args[0]->ToObject());
+            NODE_Paint2D* obj = new NODE_Paint2D(paint);
+            obj->Wrap(args.This());
+            return args.This();
+        }
     } else {
         // Invoked as plain function `MyObject(...)`, turn into construct call.
         const int argc = 1;
@@ -536,6 +556,13 @@ v8::Handle<v8::Value> NODE_Paint2D::NODE_measureText(const v8::Arguments& args) 
     NODE_Paint2D* self = ObjectWrap::Unwrap<NODE_Paint2D>(args.This());
     double width = self->paint->measureText(std::string(*str, *str + str.length()));
     return scope.Close(Number::New(width));
+}
+
+v8::Handle<v8::Value> NODE_Paint2D::NODE_clone(const v8::Arguments& args) {
+    HandleScope scope;
+    const int argc = 2;
+    Local<Value> argv[argc] = { args.This(), args.This() };
+    return NODE_Paint2D::constructor->NewInstance(argc, argv);
 }
 
 
