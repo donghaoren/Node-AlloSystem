@@ -6,6 +6,7 @@ SET ( Skia_SOURCE_DIR /opt/build/skia )
 SET ( Skia_INCLUDE_DIRS
   "${Skia_SOURCE_DIR}/include/config"
   "${Skia_SOURCE_DIR}/include/core"
+  "${Skia_SOURCE_DIR}/include/images"
   "${Skia_SOURCE_DIR}/include/gpu"
 )
 
@@ -34,6 +35,12 @@ IF(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
         "${Skia_LIBRARY_DIRS}/libetc1.a"
         "${Skia_LIBRARY_DIRS}/libSkKTX.a"
         "${Skia_LIBRARY_DIRS}/libskflate.a"
+        "${Skia_LIBRARY_DIRS}/libjpeg.a"
+        "${Skia_LIBRARY_DIRS}/libwebp_enc.a"
+        "${Skia_LIBRARY_DIRS}/libwebp_dec.a"
+        "${Skia_LIBRARY_DIRS}/libwebp_utils.a"
+        "${Skia_LIBRARY_DIRS}/libwebp_dsp.a"
+        "${Skia_LIBRARY_DIRS}/libwebp_demux.a"
         ${ZLIB_LIBRARIES}
         ${ApplicationServices_LIBRARY}
         ${AGL_LIBRARY}
@@ -53,11 +60,16 @@ IF(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
         "${Skia_LIBRARY_DIRS}/obj/gyp/libetc1.a"
         "${Skia_LIBRARY_DIRS}/obj/gyp/libSkKTX.a"
         "${Skia_LIBRARY_DIRS}/obj/gyp/libskflate.a"
+        "${Skia_LIBRARY_DIRS}/obj/gyp/libjpeg.a"
+        "${Skia_LIBRARY_DIRS}/obj/gyp/libwebp_enc.a"
+        "${Skia_LIBRARY_DIRS}/obj/gyp/libwebp_dec.a"
+        "${Skia_LIBRARY_DIRS}/obj/gyp/libwebp_utils.a"
+        "${Skia_LIBRARY_DIRS}/obj/gyp/libwebp_dsp.a"
+        "${Skia_LIBRARY_DIRS}/obj/gyp/libwebp_demux.a"
         ${FreeType_LIBRARIES}
         ${FontConfig_LIBRARIES}
         ${OPENGL_LIBRARIES}
         ${PNG_LIBRARIES}
-        ${JPEG_LIBRARIES}
         ${ZLIB_LIBRARIES}
         ${CMAKE_THREAD_LIBS_INIT}
     )

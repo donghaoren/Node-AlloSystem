@@ -14,6 +14,7 @@
 #include <SkGraphics.h>
 #include <SkSurface.h>
 #include <SkMallocPixelRef.h>
+#include <SkForceLinking.h>
 #include <vector>
 #include <iostream>
 
@@ -562,6 +563,7 @@ namespace {
         #ifndef __APPLE__
             glewInit();
         #endif
+            SkForceLinking(false);
             SkGraphics::Init();
         }
         ~GraphicalBackend_Skia_Impl() {
