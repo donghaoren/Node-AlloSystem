@@ -12,7 +12,7 @@ SET ( Skia_INCLUDE_DIRS
 
 SET ( Skia_LIBRARY_DIRS "${Skia_SOURCE_DIR}/out/Release" )
 
-# With skia commit: 3e42a4638559d71481ba598857f2d0c715c8d4b3
+# With skia commit: 7f8c54cefefb855bb0d85d09ce5282ba7e9e352a
 SET ( Skia_LIBRARIES
   "${Skia_LIBRARY_DIRS}/libskia_pdf.a"
   "${Skia_LIBRARY_DIRS}/libskia_core.a"
@@ -55,7 +55,6 @@ IF(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
     FIND_PACKAGE ( PNG )
     FIND_PACKAGE ( ZLIB )
     FIND_PACKAGE ( GIF )
-
     LIST ( APPEND Skia_LIBRARIES
         "${Skia_LIBRARY_DIRS}/obj/gyp/libetc1.a"
         "${Skia_LIBRARY_DIRS}/obj/gyp/libSkKTX.a"

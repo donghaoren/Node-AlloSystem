@@ -6,12 +6,16 @@
 
 class NODE_Surface2D : public node::ObjectWrap {
 public:
+
+    static const int SURFACETYPE_RASTER = 0;
+    static const int SURFACETYPE_PDF    = 1;
+
     static void Init(v8::Handle<v8::Object> exports);
 
     iv::graphics::Surface2D* surface;
 
 private:
-    explicit NODE_Surface2D(int width, int height);
+    explicit NODE_Surface2D(int width, int height, int type);
     ~NODE_Surface2D();
 
     static v8::Handle<v8::Value> New(const v8::Arguments& args);

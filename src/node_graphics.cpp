@@ -38,8 +38,12 @@ void NODE_Surface2D::Init(Handle<Object> exports) {
     exports->Set(String::NewSymbol("Surface2D"), constructor);
 }
 
-NODE_Surface2D::NODE_Surface2D(int width, int height) {
-    surface = backend->createSurface2D(width, height);
+NODE_Surface2D::NODE_Surface2D(int width, int height, int type) {
+    if(type == SURFACETYPE_PDF) {
+        surface = backend->createPDFSurface2D(width, height);
+    } else {
+        surface = backend->createSurface2D(width, height);
+    }
 }
 
 NODE_Surface2D::~NODE_Surface2D() {
@@ -52,8 +56,9 @@ v8::Handle<v8::Value> NODE_Surface2D::New(const v8::Arguments& args) {
     if(args.IsConstructCall()) {
         // Invoked as constructor: `new MyObject(...)`
         int width = args[0]->IsUndefined() ? 0 : args[0]->IntegerValue();
-        int height = args[0]->IsUndefined() ? 0 : args[1]->IntegerValue();
-        NODE_Surface2D* obj = new NODE_Surface2D(width, height);
+        int height = args[1]->IsUndefined() ? 0 : args[1]->IntegerValue();
+        int type = args[2]->IsUndefined() ? SURFACETYPE_RASTER : args[2]->IntegerValue();
+        NODE_Surface2D* obj = new NODE_Surface2D(width, height, type);
         obj->Wrap(args.This());
         return args.This();
     } else {
@@ -549,6 +554,9 @@ void NODE_init(Handle<Object> exports) {
     NODE_Paint2D::Init(exports);
 
     // Constant values.
+    exports->Set(String::NewSymbol("SURFACETYPE_PDF"), Uint32::New((int32_t)NODE_Surface2D::SURFACETYPE_PDF));
+    exports->Set(String::NewSymbol("SURFACETYPE_RASTER"), Uint32::New((int32_t)NODE_Surface2D::SURFACETYPE_RASTER));
+
     exports->Set(String::NewSymbol("LINECAP_BUTT"), Uint32::New((int32_t)LineCap::BUTT));
     exports->Set(String::NewSymbol("LINECAP_ROUND"), Uint32::New((int32_t)LineCap::ROUND));
     exports->Set(String::NewSymbol("LINECAP_SQUARE"), Uint32::New((int32_t)LineCap::SQUARE));
