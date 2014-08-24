@@ -18,7 +18,6 @@
 #include <iostream>
 
 #ifdef __APPLE__
-# include <GL/glew.h>
 # include <OpenGL/gl.h>
 #else
 # include <GL/glew.h>
@@ -560,7 +559,9 @@ namespace {
     class GraphicalBackend_Skia_Impl : public GraphicalBackend {
     public:
         GraphicalBackend_Skia_Impl() {
+        #ifndef __APPLE__
             glewInit();
+        #endif
             SkGraphics::Init();
         }
         ~GraphicalBackend_Skia_Impl() {
