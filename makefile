@@ -5,7 +5,7 @@ all:
 
 .PHONY: rebuild
 rebuild:
-	-rm -rf build build_native native
+	rm -rf build build_native native
 	mkdir build_native
 	cd build_native && cmake .. -DCMAKE_INSTALL_PREFIX=../native
 	node-gyp configure
@@ -16,6 +16,5 @@ deploy: all
 	mkdir deploy
 	mkdir deploy/lib
 	mkdir deploy/modules
-	-cp native/lib/*.so deploy/lib
-	-cp native/lib/*.dylib deploy/lib
+	cp native/lib/lib* deploy/lib
 	cp build/Release/*.node deploy/modules
