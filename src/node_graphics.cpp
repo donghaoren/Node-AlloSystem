@@ -1,4 +1,5 @@
 #include <node.h>
+#include <node_buffer.h>
 #include <v8.h>
 
 #include <graphics.h>
@@ -24,6 +25,8 @@ void NODE_Surface2D::Init(Handle<Object> exports) {
     tpl->PrototypeTemplate()->Set(
         String::NewSymbol("height"), FunctionTemplate::New(NODE_height)->GetFunction());
     tpl->PrototypeTemplate()->Set(
+        String::NewSymbol("pixels"), FunctionTemplate::New(NODE_pixels)->GetFunction());
+    tpl->PrototypeTemplate()->Set(
         String::NewSymbol("bindTexture"), FunctionTemplate::New(NODE_bindTexture)->GetFunction());
     tpl->PrototypeTemplate()->Set(
         String::NewSymbol("uploadTexture"), FunctionTemplate::New(NODE_uploadTexture)->GetFunction());
@@ -46,6 +49,14 @@ NODE_Surface2D::NODE_Surface2D(int width, int height, int type) {
     }
 }
 
+NODE_Surface2D::NODE_Surface2D(int width, int height, void* pixels) {
+    surface = backend->createSurface2DWithPixels(width, height, pixels);
+}
+
+NODE_Surface2D::NODE_Surface2D(const void* data, size_t length) {
+    surface = backend->createSurface2DFromImage(data, length);
+}
+
 NODE_Surface2D::~NODE_Surface2D() {
     delete surface;
 }
@@ -55,12 +66,25 @@ v8::Handle<v8::Value> NODE_Surface2D::New(const v8::Arguments& args) {
 
     if(args.IsConstructCall()) {
         // Invoked as constructor: `new MyObject(...)`
-        int width = args[0]->IsUndefined() ? 0 : args[0]->IntegerValue();
-        int height = args[1]->IsUndefined() ? 0 : args[1]->IntegerValue();
-        int type = args[2]->IsUndefined() ? SURFACETYPE_RASTER : args[2]->IntegerValue();
-        NODE_Surface2D* obj = new NODE_Surface2D(width, height, type);
-        obj->Wrap(args.This());
-        return args.This();
+        if(node::Buffer::HasInstance(args[0])) {
+            // Constructing with a buffer object.
+            NODE_Surface2D* obj = new NODE_Surface2D(node::Buffer::Data(args[0]), node::Buffer::Length(args[0]));
+            obj->Wrap(args.This());
+            return args.This();
+        } else {
+            int width = args[0]->IsUndefined() ? 0 : args[0]->IntegerValue();
+            int height = args[1]->IsUndefined() ? 0 : args[1]->IntegerValue();
+            if(node::Buffer::HasInstance(args[2])) {
+                NODE_Surface2D* obj = new NODE_Surface2D(width, height, node::Buffer::Data(args[2]));
+                obj->Wrap(args.This());
+                return args.This();
+            } else {
+                int type = args[2]->IsUndefined() ? SURFACETYPE_RASTER : args[2]->IntegerValue();
+                NODE_Surface2D* obj = new NODE_Surface2D(width, height, type);
+                obj->Wrap(args.This());
+                return args.This();
+            }
+        }
     } else {
         // Invoked as plain function `MyObject(...)`, turn into construct call.
         const int argc = 2;
@@ -77,6 +101,13 @@ v8::Handle<v8::Value> NODE_Surface2D::NODE_width(const v8::Arguments& args) {
 v8::Handle<v8::Value> NODE_Surface2D::NODE_height(const v8::Arguments& args) {
     NODE_Surface2D* obj = ObjectWrap::Unwrap<NODE_Surface2D>(args.This());
     return Uint32::New(obj->surface->height());
+}
+
+void do_nothing_callback2(char*, void*) { }
+
+v8::Handle<v8::Value> NODE_Surface2D::NODE_pixels(const v8::Arguments& args) {
+    NODE_Surface2D* obj = ObjectWrap::Unwrap<NODE_Surface2D>(args.This());
+    return node::Buffer::New((char*)obj->surface->pixels(), obj->surface->width() * obj->surface->height() * 4, do_nothing_callback2, NULL)->handle_;
 }
 
 v8::Handle<v8::Value> NODE_Surface2D::NODE_bindTexture(const v8::Arguments& args) {
@@ -126,6 +157,10 @@ void NODE_GraphicalContext2D::Init(Handle<Object> exports) {
     tpl->PrototypeTemplate()->Set(
         String::NewSymbol("drawCircle"), FunctionTemplate::New(NODE_drawCircle)->GetFunction());
     tpl->PrototypeTemplate()->Set(
+        String::NewSymbol("drawRectangle"), FunctionTemplate::New(NODE_drawRectangle)->GetFunction());
+    tpl->PrototypeTemplate()->Set(
+        String::NewSymbol("drawSurface"), FunctionTemplate::New(NODE_drawSurface)->GetFunction());
+    tpl->PrototypeTemplate()->Set(
         String::NewSymbol("rotate"), FunctionTemplate::New(NODE_rotate)->GetFunction());
     tpl->PrototypeTemplate()->Set(
         String::NewSymbol("translate"), FunctionTemplate::New(NODE_translate)->GetFunction());
@@ -159,7 +194,7 @@ void NODE_GraphicalContext2D::Init(Handle<Object> exports) {
 }
 
 NODE_GraphicalContext2D::NODE_GraphicalContext2D(NODE_Surface2D* surface) {
-    context = backend->createGraphicalContext(surface->surface);
+    context = backend->createGraphicalContext2D(surface->surface);
 }
 
 NODE_GraphicalContext2D::~NODE_GraphicalContext2D() {
@@ -196,8 +231,8 @@ v8::Handle<v8::Value> NODE_GraphicalContext2D::NODE_paint(const v8::Arguments& a
 }
 
 v8::Handle<v8::Value> NODE_GraphicalContext2D::NODE_drawPath(const v8::Arguments& args) {
-    Path* path = ObjectWrap::Unwrap<NODE_Path2D>(args[0]->ToObject())->path;
-    Paint* paint = ObjectWrap::Unwrap<NODE_Paint2D>(args[1]->ToObject())->paint;
+    Path2D* path = ObjectWrap::Unwrap<NODE_Path2D>(args[0]->ToObject())->path;
+    Paint2D* paint = ObjectWrap::Unwrap<NODE_Paint2D>(args[1]->ToObject())->paint;
     NODE_GraphicalContext2D* self = ObjectWrap::Unwrap<NODE_GraphicalContext2D>(args.This());
     self->context->drawPath(path, paint);
     return args.This();
@@ -207,7 +242,7 @@ v8::Handle<v8::Value> NODE_GraphicalContext2D::NODE_drawText(const v8::Arguments
     String::Utf8Value str(args[0]);
     double x = args[1]->NumberValue();
     double y = args[2]->NumberValue();
-    Paint* paint = ObjectWrap::Unwrap<NODE_Paint2D>(args[3]->ToObject())->paint;
+    Paint2D* paint = ObjectWrap::Unwrap<NODE_Paint2D>(args[3]->ToObject())->paint;
     NODE_GraphicalContext2D* self = ObjectWrap::Unwrap<NODE_GraphicalContext2D>(args.This());
     self->context->drawText(std::string(*str, *str + str.length()), x, y, paint);
     return args.This();
@@ -218,9 +253,9 @@ v8::Handle<v8::Value> NODE_GraphicalContext2D::NODE_drawLine(const v8::Arguments
     double y1 = args[1]->NumberValue();
     double x2 = args[2]->NumberValue();
     double y2 = args[3]->NumberValue();
-    Paint* paint = ObjectWrap::Unwrap<NODE_Paint2D>(args[4]->ToObject())->paint;
+    Paint2D* paint = ObjectWrap::Unwrap<NODE_Paint2D>(args[4]->ToObject())->paint;
     NODE_GraphicalContext2D* self = ObjectWrap::Unwrap<NODE_GraphicalContext2D>(args.This());
-    self->context->drawLine(iv::Vector3(x1, y1, 0), iv::Vector3(x2, y2, 0), paint);
+    self->context->drawLine(x1, y1, x2, y2, paint);
     return args.This();
 }
 
@@ -228,9 +263,45 @@ v8::Handle<v8::Value> NODE_GraphicalContext2D::NODE_drawCircle(const v8::Argumen
     double x = args[0]->NumberValue();
     double y = args[1]->NumberValue();
     double radius = args[2]->NumberValue();
-    Paint* paint = ObjectWrap::Unwrap<NODE_Paint2D>(args[3]->ToObject())->paint;
+    Paint2D* paint = ObjectWrap::Unwrap<NODE_Paint2D>(args[3]->ToObject())->paint;
     NODE_GraphicalContext2D* self = ObjectWrap::Unwrap<NODE_GraphicalContext2D>(args.This());
-    self->context->drawCircle(iv::Vector3(x, y, 0), radius, paint);
+    self->context->drawCircle(x, y, radius, paint);
+    return args.This();
+}
+
+v8::Handle<v8::Value> NODE_GraphicalContext2D::NODE_drawRectangle(const v8::Arguments& args) {
+    double x = args[0]->NumberValue();
+    double y = args[1]->NumberValue();
+    double w = args[2]->NumberValue();
+    double h = args[3]->NumberValue();
+    Paint2D* paint = ObjectWrap::Unwrap<NODE_Paint2D>(args[4]->ToObject())->paint;
+    NODE_GraphicalContext2D* self = ObjectWrap::Unwrap<NODE_GraphicalContext2D>(args.This());
+    self->context->drawRectangle(iv::Rectangle2d(x, y, w, h), paint);
+    return args.This();
+}
+
+v8::Handle<v8::Value> NODE_GraphicalContext2D::NODE_drawSurface(const v8::Arguments& args) {
+    NODE_GraphicalContext2D* self = ObjectWrap::Unwrap<NODE_GraphicalContext2D>(args.This());
+    if(args.Length() == 4) { // surface, x, y, paint
+        Surface2D* surface = ObjectWrap::Unwrap<NODE_Surface2D>(args[0]->ToObject())->surface;
+        double x = args[1]->NumberValue();
+        double y = args[2]->NumberValue();
+        Paint2D* paint = ObjectWrap::Unwrap<NODE_Paint2D>(args[3]->ToObject())->paint;
+        self->context->drawSurface(surface, x, y, paint);
+    }
+    if(args.Length() == 10) { // surface, x, y, paint
+        Surface2D* surface = ObjectWrap::Unwrap<NODE_Surface2D>(args[0]->ToObject())->surface;
+        double sx = args[1]->NumberValue();
+        double sy = args[2]->NumberValue();
+        double sw = args[3]->NumberValue();
+        double sh = args[4]->NumberValue();
+        double dx = args[5]->NumberValue();
+        double dy = args[6]->NumberValue();
+        double dw = args[7]->NumberValue();
+        double dh = args[8]->NumberValue();
+        Paint2D* paint = ObjectWrap::Unwrap<NODE_Paint2D>(args[9]->ToObject())->paint;
+        self->context->drawSurface(surface, iv::Rectangle2d(sx, sy, sw, sh), iv::Rectangle2d(dx, dy, dw, dh), paint);
+    }
     return args.This();
 }
 
@@ -356,6 +427,8 @@ void NODE_Path2D::Init(Handle<Object> exports) {
         String::NewSymbol("circle"), FunctionTemplate::New(NODE_circle)->GetFunction());
     tpl->PrototypeTemplate()->Set(
         String::NewSymbol("arc"), FunctionTemplate::New(NODE_arc)->GetFunction());
+    tpl->PrototypeTemplate()->Set(
+        String::NewSymbol("close"), FunctionTemplate::New(NODE_close)->GetFunction());
 
     constructor = Persistent<Function>::New(tpl->GetFunction());
 
@@ -390,37 +463,42 @@ v8::Handle<v8::Value> NODE_Path2D::New(const v8::Arguments& args) {
 
 v8::Handle<v8::Value> NODE_Path2D::NODE_moveTo(const v8::Arguments& args) {
     NODE_Path2D* self = ObjectWrap::Unwrap<NODE_Path2D>(args.This());
-    self->path->moveTo(iv::Vector3(args[0]->NumberValue(), args[1]->NumberValue(), 0));
+    self->path->moveTo(args[0]->NumberValue(), args[1]->NumberValue());
     return args.This();
 }
 
 v8::Handle<v8::Value> NODE_Path2D::NODE_lineTo(const v8::Arguments& args) {
     NODE_Path2D* self = ObjectWrap::Unwrap<NODE_Path2D>(args.This());
-    self->path->lineTo(iv::Vector3(args[0]->NumberValue(), args[1]->NumberValue(), 0));
+    self->path->lineTo(args[0]->NumberValue(), args[1]->NumberValue());
     return args.This();
 }
 
 v8::Handle<v8::Value> NODE_Path2D::NODE_bezierCurveTo(const v8::Arguments& args) {
     NODE_Path2D* self = ObjectWrap::Unwrap<NODE_Path2D>(args.This());
-    self->path->bezierCurveTo(iv::Vector3(args[0]->NumberValue(), args[1]->NumberValue(), 0), // c1
-                              iv::Vector3(args[2]->NumberValue(), args[3]->NumberValue(), 0), // c2
-                              iv::Vector3(args[4]->NumberValue(), args[5]->NumberValue(), 0)); // p
+    self->path->bezierCurveTo(args[0]->NumberValue(), args[1]->NumberValue(), // c1
+                              args[2]->NumberValue(), args[3]->NumberValue(), // c2
+                              args[4]->NumberValue(), args[5]->NumberValue()); // p
     return args.This();
 }
 
 v8::Handle<v8::Value> NODE_Path2D::NODE_circle(const v8::Arguments& args) {
     NODE_Path2D* self = ObjectWrap::Unwrap<NODE_Path2D>(args.This());
-    self->path->circle(iv::Vector3(args[0]->NumberValue(), args[1]->NumberValue(), 0), // center
-                       args[2]->NumberValue(), // radius
-                       iv::Vector3(0, 0, 1)); // normal
+    self->path->circle(args[0]->NumberValue(), args[1]->NumberValue(), // center
+                       args[2]->NumberValue()); // normal
     return args.This();
 }
 
 v8::Handle<v8::Value> NODE_Path2D::NODE_arc(const v8::Arguments& args) {
     NODE_Path2D* self = ObjectWrap::Unwrap<NODE_Path2D>(args.This());
-    self->path->arc(iv::Vector3(args[0]->NumberValue(), args[1]->NumberValue(), 0), // center
+    self->path->arc(args[0]->NumberValue(), args[1]->NumberValue(), // center
                     args[2]->NumberValue(), // radius
                     args[3]->NumberValue(), args[4]->NumberValue()); // angle1, angle2
+    return args.This();
+}
+
+v8::Handle<v8::Value> NODE_Path2D::NODE_close(const v8::Arguments& args) {
+    NODE_Path2D* self = ObjectWrap::Unwrap<NODE_Path2D>(args.This());
+    self->path->close();
     return args.This();
 }
 
@@ -449,6 +527,14 @@ void NODE_Paint2D::Init(Handle<Object> exports) {
         String::NewSymbol("setTypeface"), FunctionTemplate::New(NODE_setTypeface)->GetFunction());
     tpl->PrototypeTemplate()->Set(
         String::NewSymbol("measureText"), FunctionTemplate::New(NODE_measureText)->GetFunction());
+    tpl->PrototypeTemplate()->Set(
+        String::NewSymbol("setColorMatrix"), FunctionTemplate::New(NODE_setColorMatrix)->GetFunction());
+    tpl->PrototypeTemplate()->Set(
+        String::NewSymbol("setColorMatrixScale"), FunctionTemplate::New(NODE_setColorMatrixScale)->GetFunction());
+    tpl->PrototypeTemplate()->Set(
+        String::NewSymbol("setColorMatrixScaleAlpha"), FunctionTemplate::New(NODE_setColorMatrixScaleAlpha)->GetFunction());
+    tpl->PrototypeTemplate()->Set(
+        String::NewSymbol("setTransferMode"), FunctionTemplate::New(NODE_setTransferMode)->GetFunction());
     tpl->PrototypeTemplate()->Set(
         String::NewSymbol("clone"), FunctionTemplate::New(NODE_clone)->GetFunction());
 
@@ -558,6 +644,38 @@ v8::Handle<v8::Value> NODE_Paint2D::NODE_measureText(const v8::Arguments& args) 
     return scope.Close(Number::New(width));
 }
 
+v8::Handle<v8::Value> NODE_Paint2D::NODE_setColorMatrix(const v8::Arguments& args) {
+    double m[20];
+    for(int i = 0; i < 20; i++) m[i] = args[i]->NumberValue();
+    NODE_Paint2D* self = ObjectWrap::Unwrap<NODE_Paint2D>(args.This());
+    self->paint->setColorMatrix(m);
+    return args.This();
+}
+
+v8::Handle<v8::Value> NODE_Paint2D::NODE_setColorMatrixScale(const v8::Arguments& args) {
+    double r = args[0]->NumberValue();
+    double g = args[1]->NumberValue();
+    double b = args[2]->NumberValue();
+    double a = args[3]->NumberValue();
+    NODE_Paint2D* self = ObjectWrap::Unwrap<NODE_Paint2D>(args.This());
+    self->paint->setColorMatrixScale(r, g, b, a);
+    return args.This();
+}
+
+v8::Handle<v8::Value> NODE_Paint2D::NODE_setColorMatrixScaleAlpha(const v8::Arguments& args) {
+    double a = args[0]->NumberValue();
+    NODE_Paint2D* self = ObjectWrap::Unwrap<NODE_Paint2D>(args.This());
+    self->paint->setColorMatrixScaleAlpha(a);
+    return args.This();
+}
+
+v8::Handle<v8::Value> NODE_Paint2D::NODE_setTransferMode(const v8::Arguments& args) {
+    NODE_Paint2D* self = ObjectWrap::Unwrap<NODE_Paint2D>(args.This());
+    self->paint->setTransferMode((TransferMode)args[0]->IntegerValue());
+    return args.This();
+}
+
+
 v8::Handle<v8::Value> NODE_Paint2D::NODE_clone(const v8::Arguments& args) {
     HandleScope scope;
     const int argc = 2;
@@ -565,11 +683,17 @@ v8::Handle<v8::Value> NODE_Paint2D::NODE_clone(const v8::Arguments& args) {
     return NODE_Paint2D::constructor->NewInstance(argc, argv);
 }
 
-
 Persistent<Function> NODE_Surface2D::constructor;
 Persistent<Function> NODE_GraphicalContext2D::constructor;
 Persistent<Function> NODE_Path2D::constructor;
 Persistent<Function> NODE_Paint2D::constructor;
+
+v8::Handle<v8::Value> NODE_loadImageData(const v8::Arguments& args) {
+    HandleScope scope;
+    const int argc = 1;
+    Local<Value> argv[argc] = { args[0] };
+    return scope.Close(NODE_Surface2D::constructor->NewInstance(argc, argv));
+}
 
 void NODE_init(Handle<Object> exports) {
     backend = GraphicalBackend::CreateSkia();
@@ -579,6 +703,8 @@ void NODE_init(Handle<Object> exports) {
     NODE_GraphicalContext2D::Init(exports);
     NODE_Path2D::Init(exports);
     NODE_Paint2D::Init(exports);
+
+    exports->Set(String::NewSymbol("loadImageData"), FunctionTemplate::New(NODE_loadImageData)->GetFunction());
 
     // Constant values.
     exports->Set(String::NewSymbol("SURFACETYPE_PDF"), Uint32::New((int32_t)NODE_Surface2D::SURFACETYPE_PDF));
@@ -604,6 +730,8 @@ void NODE_init(Handle<Object> exports) {
     exports->Set(String::NewSymbol("PAINTMODE_STROKE"), Uint32::New((int32_t)PaintMode::STROKE));
     exports->Set(String::NewSymbol("PAINTMODE_FILL"), Uint32::New((int32_t)PaintMode::FILL));
     exports->Set(String::NewSymbol("PAINTMODE_STROKEFILL"), Uint32::New((int32_t)PaintMode::STROKEFILL));
+
+    exports->Set(String::NewSymbol("TRANSFERMODE_SRC_OVER"), Uint32::New((int32_t)TransferMode::SRC_OVER));
 }
 
 NODE_MODULE(node_graphics, NODE_init)

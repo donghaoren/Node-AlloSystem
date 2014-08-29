@@ -16,12 +16,16 @@ var render = function(context) {
 
 var graphics = require("node_graphics");
 
-var s = new graphics.Surface2D(1000, 1000);
-var context = new graphics.GraphicalContext2D(s);
-render(context);
-s.save("test.png");
 
-var s = new graphics.Surface2D(1000, 1000, graphics.SURFACETYPE_PDF);
+
+var s = new graphics.Surface2D(1000, 1000, graphics.SURFACETYPE_RASTER);
 var context = new graphics.GraphicalContext2D(s);
 render(context);
-s.save("test.pdf");
+
+
+var request = require('request');
+request({ url: 'http://www.baidu.com/img/bdlogo.png', encoding: null }, function(error, response, body) {
+    var img = new graphics.Surface2D(body);
+    context.drawSurface(img, 100, 0, 1000, 1000, 100, 100, 500, 500, context.paint());
+    s.save("body.png");
+});

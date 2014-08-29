@@ -15,6 +15,8 @@
 #include <SkSurface.h>
 #include <SkMallocPixelRef.h>
 #include <SkForceLinking.h>
+#include <SkColorFilter.h>
+#include <SkColorMatrixFilter.h>
 #include <vector>
 #include <iostream>
 
@@ -43,7 +45,7 @@ namespace {
         return SkColorSetARGBMacro(a, r, g, b);
     }
 
-    SkMatrix convert_matrix(const Matrix3& mat) {
+    SkMatrix convert_matrix(const Matrix3d& mat) {
         SkMatrix r;
         r.setAll(mat.a11, mat.a12, mat.a13,
                  mat.a21, mat.a22, mat.a23,
@@ -51,7 +53,11 @@ namespace {
         return r;
     }
 
-    class Path_Impl : public Path {
+    SkRect convert_rect(const Rectangle2d& rect) {
+        return SkRect::MakeXYWH(rect.position.x, rect.position.y, rect.size.x, rect.size.y);
+    }
+
+    class Path_Impl : public Path2D {
     public:
 
         struct PathAction {
@@ -76,33 +82,37 @@ namespace {
 
         // Like most graphical contexts, we can construct a path with commands:
         // Move the pen position to p.
-        virtual void moveTo(const Vector3d& p) {
-            skpath.moveTo(p.x, p.y);
+        virtual void moveTo(double x, double y) {
+            skpath.moveTo(x, y);
         }
         // Add a line from the pen position to p, and move the pen to p.
-        virtual void lineTo(const Vector3d& p) {
-            skpath.lineTo(p.x, p.y);
+        virtual void lineTo(double x, double y) {
+            skpath.lineTo(x, y);
         }
         // Add a bezier curve, with four points: the pen, c1, c2, p, and move the pen to p.
-        virtual void bezierCurveTo(const Vector3d& c1, const Vector3d& c2, const Vector3d& p) {
-            skpath.cubicTo(c1.x, c1.y, c2.x, c2.y, p.x, p.y);
+        virtual void bezierCurveTo(double c1x, double c1y, double c2x, double c2y, double x, double y) {
+            skpath.cubicTo(c1x, c1y, c2x, c2y, x, y);
         }
         // Draw circle centered at center, with normal, and radius.
-        virtual void circle(const Vector3d& center, double radius, const Vector3d& normal) {
-            skpath.addCircle(center.x, center.y, radius);
+        virtual void circle(double x, double y, double radius) {
+            skpath.addCircle(x, y, radius);
         }
 
-        virtual void arc(const Vector3d& center, double radius, double angle1, double angle2) {
+        virtual void arc(double x, double y, double radius, double angle1, double angle2) {
             angle1 = to_degree(angle1);
             angle2 = to_degree(angle2);
-            skpath.addArc(SkRect::MakeXYWH(center.x - radius, center.y - radius, radius * 2, radius * 2), angle1, angle1 - angle2);
+            skpath.addArc(SkRect::MakeXYWH(x - radius, y - radius, radius * 2, radius * 2), angle1, angle1 - angle2);
+        }
+
+        virtual void close() {
+            skpath.close();
         }
 
         SkPath skpath;
 
     };
 
-    class Paint_Impl : public Paint {
+    class Paint_Impl : public Paint2D {
     public:
 
         Paint_Impl() {
@@ -128,6 +138,27 @@ namespace {
         // Set stroke/fill styles.
         virtual void setColor(const Color& color) {
             paint.setColor(convert_color(color));
+        }
+
+        virtual void setColorMatrix(double matrix[20]) {
+            SkScalar m[20];
+            for(int i = 0; i < 20; i++) m[i] = matrix[i];
+            paint.setColorFilter(SkColorMatrixFilter::Create(m));
+        }
+
+        virtual void setColorMatrixScaleAlpha(double a) {
+            SkColorMatrix matrix;
+            matrix.setScale(1, 1, 1, a);
+            paint.setColorFilter(SkColorMatrixFilter::Create(matrix));
+        }
+
+        virtual void setColorMatrixScale(double r, double g, double b, double a) {
+            SkColorMatrix matrix;
+            matrix.setScale(r, g, b, a);
+            paint.setColorFilter(SkColorMatrixFilter::Create(matrix));
+        }
+
+        virtual void setTransferMode(TransferMode mode) {
         }
 
         virtual void setStrokeWidth(double value) {
@@ -215,7 +246,7 @@ namespace {
             typeface->unref();
         }
 
-        virtual Paint* clone() {
+        virtual Paint2D* clone() {
             return new Paint_Impl(paint);
         }
 
@@ -226,122 +257,6 @@ namespace {
 
         SkPaint paint;
 
-    };
-
-    class GraphicalContext_Impl : public GraphicalContext {
-    public:
-        // Initialize with a bitmap.
-        GraphicalContext_Impl(SkBitmap& bitmap)
-          : canvas_ptr(new SkCanvas(bitmap)), canvas(*canvas_ptr) {
-        }
-        // Initialize with a canvas pointer, add a reference to it.
-        GraphicalContext_Impl(SkCanvas* canvas_ptr_)
-          : canvas_ptr(canvas_ptr_), canvas(*canvas_ptr) {
-            canvas.ref();
-        }
-        // Create a new path.
-        virtual Path* path() {
-            return new Path_Impl();
-        }
-        // Create a new paint.
-        virtual Paint* paint() {
-            return new Paint_Impl();
-        }
-        // Draw a path.
-        virtual void drawPath(Path* path, Paint* paint_) {
-            SkPaint& paint = dynamic_cast<Paint_Impl*>(paint_)->paint;
-            canvas.drawPath(dynamic_cast<Path_Impl*>(path)->skpath, paint);
-        }
-        // Draw text.
-        virtual void drawText(const char* text, double x, double y, Paint* paint_) {
-            SkPaint& paint = dynamic_cast<Paint_Impl*>(paint_)->paint;
-            canvas.drawText(text, strlen(text), x, y, paint);
-        }
-        // Draw line.
-        virtual void drawLine(Vector3d p1, Vector3d p2, Paint* paint_) {
-            SkPaint& paint = dynamic_cast<Paint_Impl*>(paint_)->paint;
-            canvas.drawLine(p1.x, p1.y, p2.x, p2.y, paint);
-        }
-        // Draw line.
-        virtual void drawCircle(Vector3d center, double radius, Paint* paint_) {
-            SkPaint& paint = dynamic_cast<Paint_Impl*>(paint_)->paint;
-            canvas.drawCircle(center.x, center.y, radius, paint);
-        }
-        // Rotate.
-        virtual void rotate(double radius) {
-            canvas.rotate(radius / PI * 180.0);
-        }
-        // Translate.
-        virtual void translate(double tx, double ty) {
-            canvas.translate(tx, ty);
-        }
-        // Scale.
-        virtual void scale(double tx, double ty) {
-            canvas.scale(tx, ty);
-        }
-        // Concat a transformation matrix.
-        virtual void concatTransform(const Matrix3& matrix) {
-            canvas.concat(convert_matrix(matrix));
-        }
-        // Set the transformation matrix.
-        virtual void setTransform(const Matrix3& matrix) {
-            canvas.setMatrix(convert_matrix(matrix));
-        }
-        // Get the current transformation matrix.
-        virtual Matrix3 getTransform() const {
-            Matrix3 mat;
-            const SkMatrix& skm = canvas.getTotalMatrix();
-            mat.a11 = skm.getScaleX();
-            mat.a12 = skm.getSkewX();
-            mat.a22 = skm.getScaleY();
-            mat.a21 = skm.getSkewY();
-            mat.a13 = skm.getTranslateX();
-            mat.a23 = skm.getTranslateY();
-            mat.a31 = skm.getPerspX();
-            mat.a32 = skm.getPerspY();
-            mat.a33 = 1.0;
-            return mat;
-        }
-        // Clear the canvas.
-        virtual void clear(const Color& color) {
-            canvas.clear(convert_color(color));
-        }
-        // Reset the graphical state.
-        virtual void reset() {
-            canvas.resetMatrix();
-        }
-        // Save/load the current graphical state.
-        virtual State getState() const {
-            State s;
-            s.transform = getTransform();
-            return s;
-        }
-        // Load a saved state.
-        virtual void setState(const State& state) {
-            setTransform(state.transform);
-        }
-        // Push the graphical state.
-        virtual void save() {
-            canvas.save();
-        }
-        // Pop the graphical state.
-        virtual void restore() {
-            canvas.restore();
-        }
-
-        // Flush pending operations.
-        virtual void flush() {
-            canvas.flush();
-        }
-
-        // Destructor, unref the canvas.
-        virtual ~GraphicalContext_Impl() {
-            canvas.unref();
-        }
-
-        SkCanvas* canvas_ptr;
-        SkCanvas& canvas;
-        Matrix3 matrix0;
     };
 
     // A SkWStream that wrapps ByteStreams.
@@ -363,78 +278,93 @@ namespace {
 
     };
 
-    // class Surface2D_Bitmap : public Surface2D {
-    // public:
+    class Surface2D_Bitmap : public Surface2D {
+    public:
+        Surface2D_Bitmap() {
+            texture = 0;
+        }
 
-    //     Surface2D_Bitmap(int width, int height) {
-    //         bool r = bitmap.allocPixels(SkImageInfo::Make(width, height, kRGBA_8888_SkColorType, kUnpremul_SkAlphaType));
-    //         if(!r) {
-    //             throw std::invalid_argument("cannot create 2D bitmap.");
-    //         }
-    //         texture = 0;
-    //     }
+        Surface2D_Bitmap(int width, int height) {
+            bool r = bitmap.allocPixels(SkImageInfo::Make(width, height, kRGBA_8888_SkColorType, kPremul_SkAlphaType));
+            if(!r) {
+                throw std::invalid_argument("cannot create 2D bitmap.");
+            }
+            texture = 0;
+        }
 
-    //     // Width, height, stride.
-    //     virtual int width() const {
-    //         return bitmap.width();
-    //     }
+        Surface2D_Bitmap(int width, int height, void* buffer) {
+            bool r = bitmap.installPixels(SkImageInfo::Make(width, height, kRGBA_8888_SkColorType, kPremul_SkAlphaType), buffer, width * 4);
+            if(!r) {
+                throw std::invalid_argument("cannot create 2D bitmap.");
+            }
+            texture = 0;
+        }
 
-    //     virtual int height() const {
-    //         return bitmap.height();
-    //     }
+        // Width, height, stride.
+        virtual int width() const {
+            return bitmap.width();
+        }
 
-    //     virtual void bindTexture(unsigned int unit) {
-    //         if(!texture) {
-    //             glGenTextures(1, &texture);
-    //         }
-    //         glActiveTexture(GL_TEXTURE0 + unit);
-    //         glBindTexture(GL_TEXTURE_2D, texture);
-    //     }
+        virtual int height() const {
+            return bitmap.height();
+        }
 
-    //     virtual void uploadTexture() {
-    //         bindTexture(0);
-    //         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
-    //         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
-    //         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    //         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-    //         // Strange problem in skia, need RGBA format in Mac, but BGRA in linux.
-    //         // In Linux, comment out SK_SAMPLES_FOR_X in SkUserConfig.h to solve the RGB ordering problem.
-    //         bitmap.lockPixels();
-    //         unsigned char* bmp = (unsigned char*)bitmap.getPixels();
-    //         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width(), height(), 0, GL_RGBA, GL_UNSIGNED_BYTE, bmp);
-    //         bitmap.unlockPixels();
+        virtual void bindTexture(unsigned int unit) {
+            if(!texture) {
+                glGenTextures(1, &texture);
+            }
+            glActiveTexture(GL_TEXTURE0 + unit);
+            glBindTexture(GL_TEXTURE_2D, texture);
+        }
 
-    //         glGenerateMipmap(GL_TEXTURE_2D);
+        virtual const void* pixels() const {
+            return bitmap.getPixels();
+        }
 
-    //         unbindTexture(0);
-    //     }
+        virtual void uploadTexture() {
+            bindTexture(0);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
 
-    //     virtual void unbindTexture(unsigned int unit) {
-    //         glActiveTexture(GL_TEXTURE0 + unit);
-    //         glBindTexture(GL_TEXTURE_2D, 0);
-    //         glDisable(GL_TEXTURE_2D);
-    //     }
+            // Strange problem in skia, need RGBA format in Mac, but BGRA in linux.
+            // In Linux, comment out SK_SAMPLES_FOR_X in SkUserConfig.h to solve the RGB ordering problem.
 
-    //     virtual void save(ByteStream* stream) {
-    //         SkData* data = SkImageEncoder::EncodeData(bitmap, SkImageEncoder::kPNG_Type, SkImageEncoder::kDefaultQuality);
-    //         if(data) {
-    //             stream->write(data->bytes(), data->size());
-    //             data->unref();
-    //         } else {
-    //             cout << bitmap.width() << ", " << bitmap.height() << ", " << bitmap.rowBytes() << endl;
-    //             cout << "Warning: unable to save." << endl;
-    //         }
-    //     }
+            unsigned char* bmp = (unsigned char*)bitmap.getPixels();
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width(), height(), 0, GL_RGBA, GL_UNSIGNED_BYTE, bmp);
 
-    //     virtual ~Surface2D_Bitmap() {
-    //         if(texture) {
-    //             glDeleteTextures(1, &texture);
-    //         }
-    //     }
+            glGenerateMipmap(GL_TEXTURE_2D);
 
-    //     SkBitmap bitmap;
-    //     GLuint texture;
-    // };
+            unbindTexture(0);
+        }
+
+        virtual void unbindTexture(unsigned int unit) {
+            glActiveTexture(GL_TEXTURE0 + unit);
+            glBindTexture(GL_TEXTURE_2D, 0);
+            glDisable(GL_TEXTURE_2D);
+        }
+
+        virtual void save(ByteStream* stream) {
+            SkData* data = SkImageEncoder::EncodeData(bitmap, SkImageEncoder::kPNG_Type, SkImageEncoder::kDefaultQuality);
+            if(data) {
+                stream->write(data->bytes(), data->size());
+                data->unref();
+            } else {
+                cout << bitmap.width() << ", " << bitmap.height() << ", " << bitmap.rowBytes() << endl;
+                cout << "Warning: unable to save." << endl;
+            }
+        }
+
+        virtual ~Surface2D_Bitmap() {
+            if(texture) {
+                glDeleteTextures(1, &texture);
+            }
+        }
+
+        SkBitmap bitmap;
+        GLuint texture;
+    };
 
     class Surface2D_Surface : public Surface2D {
     public:
@@ -442,7 +372,7 @@ namespace {
         Surface2D_Surface(int width, int height) {
             // Seems the NewRaster will call SkMallocPixelRef::NewAllocate, which only accepts kN32_SkColorType,
             // so we need to ensure that kRGBA_8888_SkColorType == kN32_SkColorType.
-            SkImageInfo info = SkImageInfo::Make(width, height, kRGBA_8888_SkColorType, kUnpremul_SkAlphaType);
+            SkImageInfo info = SkImageInfo::Make(width, height, kRGBA_8888_SkColorType, kPremul_SkAlphaType);
             surface = SkSurface::NewRaster(info);
             if(!surface) {
                 throw std::invalid_argument("cannot create 2D surface.");
@@ -459,6 +389,12 @@ namespace {
             return surface->height();
         }
 
+        virtual const void* pixels() const {
+            SkImageInfo info;
+            size_t row_bytes;
+            return surface->peekPixels(&info, &row_bytes);
+        }
+
         virtual void bindTexture(unsigned int unit) {
             if(!texture) {
                 glGenTextures(1, &texture);
@@ -472,7 +408,6 @@ namespace {
             size_t row_bytes;
             unsigned char* bmp = (unsigned char*)surface->peekPixels(&info, &row_bytes);
             if(!bmp) {
-                cout << "Failed to peekPixels()" << endl;
                 return;
             }
 
@@ -536,6 +471,10 @@ namespace {
             return pdf_height;
         }
 
+        virtual const void* pixels() const {
+            return NULL;
+        }
+
         virtual void bindTexture(unsigned int unit) {
             throw not_supported();
         }
@@ -566,6 +505,147 @@ namespace {
 
     };
 
+    class GraphicalContext_Impl : public GraphicalContext2D {
+    public:
+        // Initialize with a bitmap.
+        GraphicalContext_Impl(SkBitmap& bitmap)
+          : canvas_ptr(new SkCanvas(bitmap)), canvas(*canvas_ptr) {
+        }
+        // Initialize with a canvas pointer, add a reference to it.
+        GraphicalContext_Impl(SkCanvas* canvas_ptr_)
+          : canvas_ptr(canvas_ptr_), canvas(*canvas_ptr) {
+            canvas.ref();
+        }
+        // Create a new path.
+        virtual Path2D* path() {
+            return new Path_Impl();
+        }
+        // Create a new paint.
+        virtual Paint2D* paint() {
+            return new Paint_Impl();
+        }
+        // Draw a path.
+        virtual void drawPath(Path2D* path, Paint2D* paint_) {
+            SkPaint& paint = dynamic_cast<Paint_Impl*>(paint_)->paint;
+            canvas.drawPath(dynamic_cast<Path_Impl*>(path)->skpath, paint);
+        }
+        // Draw text.
+        virtual void drawText(const char* text, double x, double y, Paint2D* paint_) {
+            SkPaint& paint = dynamic_cast<Paint_Impl*>(paint_)->paint;
+            canvas.drawText(text, strlen(text), x, y, paint);
+        }
+        // Draw line.
+        virtual void drawLine(double x1, double y1, double x2, double y2, Paint2D* paint_) {
+            SkPaint& paint = dynamic_cast<Paint_Impl*>(paint_)->paint;
+            canvas.drawLine(x1, y1, x2, y2, paint);
+        }
+        // Draw line.
+        virtual void drawCircle(double x, double y, double radius, Paint2D* paint_) {
+            SkPaint& paint = dynamic_cast<Paint_Impl*>(paint_)->paint;
+            canvas.drawCircle(x, y, radius, paint);
+        }
+        virtual void drawRectangle(const Rectangle2d& rect, Paint2D* paint_) {
+            SkPaint& paint = dynamic_cast<Paint_Impl*>(paint_)->paint;
+            canvas.drawRect(convert_rect(rect), paint);
+        }
+
+        // Simple drawSurface
+        virtual void drawSurface(Surface2D* surface_, double x, double y, Paint2D* paint_) {
+            SkPaint& paint = dynamic_cast<Paint_Impl*>(paint_)->paint;
+            if(typeid(*surface_) == typeid(Surface2D_Bitmap)) {
+                Surface2D_Bitmap* surface = dynamic_cast<Surface2D_Bitmap*>(surface_);
+                canvas.drawBitmap(surface->bitmap, x, y, &paint);
+            } else {
+                throw std::invalid_argument("drawSurface() can only take bitmaps.");
+            }
+        }
+        virtual void drawSurface(Surface2D* surface_, const Rectangle2d& src, const Rectangle2d& dest, Paint2D* paint_) {
+            SkPaint& paint = dynamic_cast<Paint_Impl*>(paint_)->paint;
+            if(typeid(*surface_) == typeid(Surface2D_Bitmap)) {
+                Surface2D_Bitmap* surface = dynamic_cast<Surface2D_Bitmap*>(surface_);
+                SkRect sksrc = convert_rect(src);
+                canvas.drawBitmapRectToRect(surface->bitmap, &sksrc, convert_rect(dest), &paint);
+            } else {
+                throw std::invalid_argument("drawSurface() can only take bitmaps.");
+            }
+        }
+        // Rotate.
+        virtual void rotate(double radius) {
+            canvas.rotate(radius / PI * 180.0);
+        }
+        // Translate.
+        virtual void translate(double tx, double ty) {
+            canvas.translate(tx, ty);
+        }
+        // Scale.
+        virtual void scale(double tx, double ty) {
+            canvas.scale(tx, ty);
+        }
+        // Concat a transformation matrix.
+        virtual void concatTransform(const Matrix3d& matrix) {
+            canvas.concat(convert_matrix(matrix));
+        }
+        // Set the transformation matrix.
+        virtual void setTransform(const Matrix3d& matrix) {
+            canvas.setMatrix(convert_matrix(matrix));
+        }
+        // Get the current transformation matrix.
+        virtual Matrix3d getTransform() const {
+            Matrix3d mat;
+            const SkMatrix& skm = canvas.getTotalMatrix();
+            mat.a11 = skm.getScaleX();
+            mat.a12 = skm.getSkewX();
+            mat.a22 = skm.getScaleY();
+            mat.a21 = skm.getSkewY();
+            mat.a13 = skm.getTranslateX();
+            mat.a23 = skm.getTranslateY();
+            mat.a31 = skm.getPerspX();
+            mat.a32 = skm.getPerspY();
+            mat.a33 = 1.0;
+            return mat;
+        }
+        // Clear the canvas.
+        virtual void clear(const Color& color) {
+            canvas.clear(convert_color(color));
+        }
+        // Reset the graphical state.
+        virtual void reset() {
+            canvas.resetMatrix();
+        }
+        // Save/load the current graphical state.
+        virtual State getState() const {
+            State s;
+            s.transform = getTransform();
+            return s;
+        }
+        // Load a saved state.
+        virtual void setState(const State& state) {
+            setTransform(state.transform);
+        }
+        // Push the graphical state.
+        virtual void save() {
+            canvas.save();
+        }
+        // Pop the graphical state.
+        virtual void restore() {
+            canvas.restore();
+        }
+
+        // Flush pending operations.
+        virtual void flush() {
+            canvas.flush();
+        }
+
+        // Destructor, unref the canvas.
+        virtual ~GraphicalContext_Impl() {
+            canvas.unref();
+        }
+
+        SkCanvas* canvas_ptr;
+        SkCanvas& canvas;
+        Matrix3d matrix0;
+    };
+
     class GraphicalBackend_Skia_Impl : public GraphicalBackend {
     public:
         GraphicalBackend_Skia_Impl() {
@@ -581,7 +661,13 @@ namespace {
 
         // Create new 2D surface.
         virtual Surface2D* createSurface2D(int width, int height) {
-            return new Surface2D_Surface(width, height);
+            //return new Surface2D_Surface(width, height);
+            return new Surface2D_Bitmap(width, height);
+        }
+
+        virtual Surface2D* createSurface2DWithPixels(int width, int height, void* pixels) {
+            //return new Surface2D_Surface(width, height);
+            return new Surface2D_Bitmap(width, height, pixels);
         }
 
         virtual Surface2D* createPDFSurface2D(int width, int height) {
@@ -589,12 +675,12 @@ namespace {
         }
 
         // Create 2D graphical context for a surface.
-        virtual GraphicalContext* createGraphicalContext(Surface2D* surface_) {
-            // if(typeid(*surface_) == typeid(Surface2D_Bitmap)) {
-            //     Surface2D_Bitmap* surface = dynamic_cast<Surface2D_Bitmap*>(surface_);
-            //     GraphicalContext_Impl* r = new GraphicalContext_Impl(surface->bitmap);
-            //     return r;
-            // }
+        virtual GraphicalContext2D* createGraphicalContext2D(Surface2D* surface_) {
+            if(typeid(*surface_) == typeid(Surface2D_Bitmap)) {
+                Surface2D_Bitmap* surface = dynamic_cast<Surface2D_Bitmap*>(surface_);
+                GraphicalContext_Impl* r = new GraphicalContext_Impl(surface->bitmap);
+                return r;
+            }
             if(typeid(*surface_) == typeid(Surface2D_Surface)) {
                 Surface2D_Surface* surface = dynamic_cast<Surface2D_Surface*>(surface_);
                 GraphicalContext_Impl* r = new GraphicalContext_Impl(surface->surface->getCanvas());
@@ -609,6 +695,24 @@ namespace {
             throw std::invalid_argument("surface");
         }
 
+        virtual Surface2D* createSurface2DFromImage(ByteStream* stream) {
+            std::vector<unsigned char> buffer;
+            std::vector<unsigned char> read_buffer(1024 * 1024);
+            int length;
+            while((length = stream->read(&read_buffer[0], read_buffer.size())) != 0) {
+                buffer.insert(buffer.end(), read_buffer.begin(), read_buffer.begin() + length);
+            }
+            return createSurface2DFromImage(&buffer[0], buffer.size());
+        }
+        virtual Surface2D* createSurface2DFromImage(const void* data, size_t length) {
+            Surface2D_Bitmap* surface = new Surface2D_Bitmap();
+            if(SkImageDecoder::DecodeMemory(data, length, &surface->bitmap, kRGBA_8888_SkColorType, SkImageDecoder::kDecodePixels_Mode)) {
+                return surface;
+            } else {
+                delete surface;
+                throw std::invalid_argument("failed to decode image.");
+            }
+        }
     };
 }
 

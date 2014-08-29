@@ -3,7 +3,6 @@
 
 #include <graphics.h>
 
-
 class NODE_Surface2D : public node::ObjectWrap {
 public:
 
@@ -14,14 +13,19 @@ public:
 
     iv::graphics::Surface2D* surface;
 
+    friend v8::Handle<v8::Value> NODE_loadImageData(const v8::Arguments& args);
+
 private:
     explicit NODE_Surface2D(int width, int height, int type);
+    explicit NODE_Surface2D(int width, int height, void* pixels);
+    explicit NODE_Surface2D(const void* data, size_t length);
     ~NODE_Surface2D();
 
     static v8::Handle<v8::Value> New(const v8::Arguments& args);
 
     static v8::Handle<v8::Value> NODE_width(const v8::Arguments& args);
     static v8::Handle<v8::Value> NODE_height(const v8::Arguments& args);
+    static v8::Handle<v8::Value> NODE_pixels(const v8::Arguments& args);
     static v8::Handle<v8::Value> NODE_bindTexture(const v8::Arguments& args);
     static v8::Handle<v8::Value> NODE_uploadTexture(const v8::Arguments& args);
     static v8::Handle<v8::Value> NODE_unbindTexture(const v8::Arguments& args);
@@ -34,7 +38,7 @@ class NODE_GraphicalContext2D : public node::ObjectWrap {
 public:
     static void Init(v8::Handle<v8::Object> exports);
 
-    iv::graphics::GraphicalContext* context;
+    iv::graphics::GraphicalContext2D* context;
 
 private:
     explicit NODE_GraphicalContext2D(NODE_Surface2D* surface);
@@ -49,6 +53,8 @@ private:
     static v8::Handle<v8::Value> NODE_drawText(const v8::Arguments& args);
     static v8::Handle<v8::Value> NODE_drawLine(const v8::Arguments& args);
     static v8::Handle<v8::Value> NODE_drawCircle(const v8::Arguments& args);
+    static v8::Handle<v8::Value> NODE_drawRectangle(const v8::Arguments& args);
+    static v8::Handle<v8::Value> NODE_drawSurface(const v8::Arguments& args);
 
     static v8::Handle<v8::Value> NODE_rotate(const v8::Arguments& args);
     static v8::Handle<v8::Value> NODE_translate(const v8::Arguments& args);
@@ -77,7 +83,7 @@ public:
 
     static v8::Handle<v8::Value> NewInstance(const v8::Arguments& args);
 
-    iv::graphics::Path* path;
+    iv::graphics::Path2D* path;
 
     friend class NODE_GraphicalContext2D;
 
@@ -92,6 +98,7 @@ private:
     static v8::Handle<v8::Value> NODE_bezierCurveTo(const v8::Arguments& args);
     static v8::Handle<v8::Value> NODE_circle(const v8::Arguments& args);
     static v8::Handle<v8::Value> NODE_arc(const v8::Arguments& args);
+    static v8::Handle<v8::Value> NODE_close(const v8::Arguments& args);
 
     static v8::Persistent<v8::Function> constructor;
 };
@@ -102,7 +109,7 @@ public:
 
     static v8::Handle<v8::Value> NewInstance(const v8::Arguments& args);
 
-    iv::graphics::Paint* paint;
+    iv::graphics::Paint2D* paint;
 
     friend class NODE_GraphicalContext2D;
 
@@ -125,7 +132,14 @@ private:
 
     static v8::Handle<v8::Value> NODE_measureText(const v8::Arguments& args);
 
+    static v8::Handle<v8::Value> NODE_setColorMatrix(const v8::Arguments& args);
+    static v8::Handle<v8::Value> NODE_setColorMatrixScale(const v8::Arguments& args);
+    static v8::Handle<v8::Value> NODE_setColorMatrixScaleAlpha(const v8::Arguments& args);
+    static v8::Handle<v8::Value> NODE_setTransferMode(const v8::Arguments& args);
+
     static v8::Handle<v8::Value> NODE_clone(const v8::Arguments& args);
 
     static v8::Persistent<v8::Function> constructor;
 };
+
+v8::Handle<v8::Value> NODE_loadImageData(const v8::Arguments& args);

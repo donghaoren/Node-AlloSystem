@@ -44,6 +44,13 @@
         } ],
       ],
       "sources": [ "src/node_graphics.cpp" ]
+    },
+    {
+      "include_dirs": [
+        "native/include"
+      ],
+      "target_name": "node_sharedmemory",
+      "sources": ["src/node_sharedmemory.cpp"]
     }
   ]
 }

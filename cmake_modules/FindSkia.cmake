@@ -7,6 +7,7 @@ SET ( Skia_INCLUDE_DIRS
   "${Skia_SOURCE_DIR}/include/config"
   "${Skia_SOURCE_DIR}/include/core"
   "${Skia_SOURCE_DIR}/include/images"
+  "${Skia_SOURCE_DIR}/include/effects"
   "${Skia_SOURCE_DIR}/include/gpu"
 )
 
