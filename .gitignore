@@ -1,4 +1,5 @@
 native/
 build/
 build_native/
+deploy/
 *.dylib
