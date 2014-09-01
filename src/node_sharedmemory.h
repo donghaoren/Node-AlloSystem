@@ -12,11 +12,14 @@ public:
 
 private:
     explicit NODE_SharedMemory(int key, int size, bool is_create);
+    explicit NODE_SharedMemory(int shmid, int semid, int size, bool is_create);
     ~NODE_SharedMemory();
 
     static v8::Handle<v8::Value> New(const v8::Arguments& args);
 
     static v8::Handle<v8::Value> NODE_size(const v8::Arguments& args);
+    static v8::Handle<v8::Value> NODE_shmid(const v8::Arguments& args);
+    static v8::Handle<v8::Value> NODE_semid(const v8::Arguments& args);
     static v8::Handle<v8::Value> NODE_buffer(const v8::Arguments& args);
     static v8::Handle<v8::Value> NODE_delete(const v8::Arguments& args);
     static v8::Handle<v8::Value> NODE_close(const v8::Arguments& args);

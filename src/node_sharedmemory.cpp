@@ -23,6 +23,10 @@ void NODE_SharedMemory::Init(Handle<Object> exports) {
     tpl->PrototypeTemplate()->Set(
         String::NewSymbol("size"), FunctionTemplate::New(NODE_size)->GetFunction());
     tpl->PrototypeTemplate()->Set(
+        String::NewSymbol("shmid"), FunctionTemplate::New(NODE_shmid)->GetFunction());
+    tpl->PrototypeTemplate()->Set(
+        String::NewSymbol("semid"), FunctionTemplate::New(NODE_semid)->GetFunction());
+    tpl->PrototypeTemplate()->Set(
         String::NewSymbol("buffer"), FunctionTemplate::New(NODE_buffer)->GetFunction());
     tpl->PrototypeTemplate()->Set(
         String::NewSymbol("delete"), FunctionTemplate::New(NODE_delete)->GetFunction());
@@ -74,19 +78,39 @@ NODE_SharedMemory::NODE_SharedMemory(int key, int size_, bool is_create_) {
         semrm(key);
 
         shm_id = shmget(key, size, IPC_CREAT | IPC_EXCL | 0666);
-        if(shm_id < 0) return;
+        if(shm_id < 0) { perror("shmget"); return; }
         sem_id = semget(key, 2, IPC_CREAT | IPC_EXCL | 0666);
-        if(sem_id < 0) return;
+        if(sem_id < 0) { perror("semget"); return; }
         short sarray[2] = { 0, 0 };
         semctl(sem_id, 0, SETALL, sarray);
 
         shm_data = (unsigned char*)shmat(shm_id, NULL, 0);
     } else {
         shm_id = shmget(key, size, 0666);
-        if(shm_id < 0) return;
+        if(shm_id < 0) { perror("shmget"); return; }
         sem_id = semget(key, 2, 0666);
-        if(sem_id < 0) return;
+        if(sem_id < 0) { perror("semget"); return; }
 
+        shm_data = (unsigned char*)shmat(shm_id, NULL, 0);
+    }
+}
+
+NODE_SharedMemory::NODE_SharedMemory(int shmid, int semid, int size_, bool is_create_) {
+    is_create = is_create_;
+    shm_data = NULL;
+    size = size_;
+    if(is_create) {
+        shm_id = shmget(IPC_PRIVATE, size, IPC_CREAT | 0666);
+        if(shm_id < 0) { perror("shmget2"); return; }
+        sem_id = semget(IPC_PRIVATE, 2, IPC_CREAT | 0666);
+        if(sem_id < 0) { perror("semget2"); return; }
+        short sarray[2] = { 0, 0 };
+        semctl(sem_id, 0, SETALL, sarray);
+
+        shm_data = (unsigned char*)shmat(shm_id, NULL, 0);
+    } else {
+        shm_id = shmid;
+        sem_id = semid;
         shm_data = (unsigned char*)shmat(shm_id, NULL, 0);
     }
 }
@@ -100,15 +124,30 @@ NODE_SharedMemory::~NODE_SharedMemory() {
 
 v8::Handle<v8::Value> NODE_SharedMemory::New(const v8::Arguments& args) {
     if(args.IsConstructCall()) {
-        int key = args[0]->IntegerValue();
-        int size = args[1]->IntegerValue();
-        bool is_create = args[2]->BooleanValue();
-        NODE_SharedMemory* obj = new NODE_SharedMemory(key, size, is_create);
-        if(obj->shm_id < 0 || obj->sem_id < 0) {
-            return ThrowException(Exception::Error(String::New("SharedMemory: shmget()/semget() failed.")));
+        if(args.Length() == 3) {
+            int key = args[0]->IntegerValue();
+            int size = args[1]->IntegerValue();
+            bool is_create = args[2]->BooleanValue();
+            NODE_SharedMemory* obj = new NODE_SharedMemory(key, size, is_create);
+            if(obj->shm_id < 0 || obj->sem_id < 0) {
+                return ThrowException(Exception::Error(String::New("SharedMemory: shmget()/semget() failed.")));
+            }
+            obj->Wrap(args.This());
+            return args.This();
+        } else if(args.Length() == 4) {
+            int shmid = args[0]->IntegerValue();
+            int semid = args[1]->IntegerValue();
+            int size = args[2]->IntegerValue();
+            bool is_create = args[3]->BooleanValue();
+            NODE_SharedMemory* obj = new NODE_SharedMemory(shmid, semid, size, is_create);
+            if(obj->shm_id < 0 || obj->sem_id < 0) {
+                return ThrowException(Exception::Error(String::New("SharedMemory: shmget()/semget() failed.")));
+            }
+            obj->Wrap(args.This());
+            return args.This();
+        } else {
+            return ThrowException(Exception::Error(String::New("SharedMemory: invalid arguments.")));
         }
-        obj->Wrap(args.This());
-        return args.This();
     } else {
         // Invoked as plain function `MyObject(...)`, turn into construct call.
         const int argc = 3;
@@ -120,6 +159,16 @@ v8::Handle<v8::Value> NODE_SharedMemory::New(const v8::Arguments& args) {
 v8::Handle<v8::Value> NODE_SharedMemory::NODE_size(const v8::Arguments& args) {
     NODE_SharedMemory* obj = node::ObjectWrap::Unwrap<NODE_SharedMemory>(args.This());
     return Integer::New(obj->size);
+}
+
+v8::Handle<v8::Value> NODE_SharedMemory::NODE_shmid(const v8::Arguments& args) {
+    NODE_SharedMemory* obj = node::ObjectWrap::Unwrap<NODE_SharedMemory>(args.This());
+    return Integer::New(obj->shm_id);
+}
+
+v8::Handle<v8::Value> NODE_SharedMemory::NODE_semid(const v8::Arguments& args) {
+    NODE_SharedMemory* obj = node::ObjectWrap::Unwrap<NODE_SharedMemory>(args.This());
+    return Integer::New(obj->sem_id);
 }
 
 void do_nothing_free_callback(char* data, void* hint) { }
