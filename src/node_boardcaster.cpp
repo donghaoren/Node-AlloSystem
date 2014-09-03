@@ -42,7 +42,11 @@ public:
     }
 
     ~Delegate() {
-        uv_close((uv_handle_t*)&async, NULL);
+        uv_unref((uv_handle_t*)&async);
+        uv_mutex_destroy(&mutex);
+        if(!onMessageCallback.IsEmpty()) {
+            onMessageCallback.Dispose();
+        }
     }
 
     virtual void onMessage(const unsigned char* data, size_t length) {
@@ -81,6 +85,8 @@ Handle<Value> EXPORT_start(const Arguments& args) {
 Handle<Value> EXPORT_stop(const Arguments& args) {
     if(boardcaster) {
         delete boardcaster;
+    }
+    if(delegate) {
         delete delegate;
     }
     boardcaster = NULL;
@@ -106,6 +112,7 @@ Handle<Value> EXPORT_onMessage(const Arguments& args) {
 
 void NODE_init(Handle<Object> exports) {
     exports->Set(String::NewSymbol("start"), FunctionTemplate::New(EXPORT_start)->GetFunction());
+    exports->Set(String::NewSymbol("stop"), FunctionTemplate::New(EXPORT_stop)->GetFunction());
     exports->Set(String::NewSymbol("onMessage"), FunctionTemplate::New(EXPORT_onMessage)->GetFunction());
 }
 

@@ -23,6 +23,11 @@ namespace {
         bool isRoot;
         string upstream;
 
+        bool isConnect;
+        string connectIP;
+        int connectPort;
+
+
         Host() { }
         Host(const string& ip_, int port_, bool isRoot_, const string& upstream_ = "")
         : ip(ip_), port(port_), isRoot(isRoot_), upstream(upstream_) { }
@@ -57,12 +62,19 @@ namespace {
 
                 if(args[0] == "host") {
                     Host host;
+                    host.isRoot = false;
+                    host.isConnect = false;
                     string name = args[1];
-                    host.ip = args[2];
-                    host.port = atoi(args[3].c_str());
-                    if(args[4] == "root") host.isRoot = true;
-                    else host.isRoot = false;
-                    if(args[4] == "upstream") host.upstream = args[5];
+                    if(args[2] == "connect") {
+                        host.isConnect = true;
+                        host.connectIP = args[3];
+                        host.connectPort = atoi(args[4].c_str());
+                    } else {
+                        host.ip = args[2];
+                        host.port = atoi(args[3].c_str());
+                        if(args[4] == "root") host.isRoot = true;
+                        if(args[4] == "upstream") host.upstream = args[5];
+                    }
                     hosts[name] = host;
                 } else {
                     throw std::invalid_argument("Error reading configuration file: invalid command '" + args[0] + "'.");
@@ -114,35 +126,36 @@ namespace {
                 }
             }
 
-            ~Connection() { printf("Closed!\n"); }
+            ~Connection() { }
 
             int buffer_size;
             tcp::socket socket;
             Boardcaster_Impl_TCP* boardcaster;
         };
 
-        Boardcaster_Impl_TCP(const char* hostname = 0, const char* config_file = 0) : upstream(io_service) {
-            if(!config_file) {
-                config.test(hostname);
-            } else {
-                config.read(config_file);
-                config.hostname = hostname;
-            }
+        Boardcaster_Impl_TCP(const char* hostname_, const char* config_file_) {
+            hostname = hostname_;
+            config_file = config_file_;
 
-            acceptor.reset(new tcp::acceptor(io_service, tcp::endpoint(tcp::v4(), config.hosts[config.hostname].port)));
-            startAccept();
-            connectUpstream();
             thread = boost::thread(boost::bind(&Boardcaster_Impl_TCP::ioThread, this));
         }
 
         void connectUpstream() {
             if(config.hosts[config.hostname].isRoot) return;
-            tcp::resolver resolver(io_service);
-            Host upstream_info = config.hosts[config.hosts[config.hostname].upstream];
-            tcp::resolver::query query(upstream_info.ip, boost::to_string(upstream_info.port));
+            string ip;
+            int port;
+            if(config.hosts[config.hostname].isConnect) {
+                ip = config.hosts[config.hostname].connectIP;
+                port = config.hosts[config.hostname].connectPort;
+            } else {
+                Host upstream_info = config.hosts[config.hosts[config.hostname].upstream];
+                ip = upstream_info.ip;
+                port = upstream_info.port;
+            }
+            tcp::resolver resolver(*io_service);
+            tcp::resolver::query query(ip, boost::to_string(port));
             tcp::resolver::iterator iterator = resolver.resolve(query);
-            printf("%s: Connect to upstream %s:%d.\n", config.hostname.c_str(), upstream_info.ip.c_str(), upstream_info.port);
-            boost::asio::async_connect(upstream, iterator,
+            boost::asio::async_connect(*upstream, iterator,
                 boost::bind(&Boardcaster_Impl_TCP::handleUpstreamConnect, this,
                 boost::asio::placeholders::error)
             );
@@ -157,7 +170,7 @@ namespace {
         }
 
         void readUpstreamMessage() {
-            boost::asio::async_read(upstream,
+            boost::asio::async_read(*upstream,
                 boost::asio::buffer(&message_header, sizeof(MessageHeader)),
                 boost::bind(&Boardcaster_Impl_TCP::handleReadHeader, this,
                     boost::asio::placeholders::error
@@ -171,7 +184,7 @@ namespace {
                 return;
             }
             message_data.resize(message_header.length);
-            boost::asio::async_read(upstream,
+            boost::asio::async_read(*upstream,
                 boost::asio::buffer(message_data),
                 boost::bind(&Boardcaster_Impl_TCP::handleReadData, this,
                     boost::asio::placeholders::error
@@ -208,16 +221,14 @@ namespace {
 
         void addConnection(Connection::pointer pointer) {
             connections.insert(pointer);
-            printf("Got Connection!\n");
         }
 
         void removeConnection(Connection::pointer pointer) {
             connections.erase(pointer);
-            printf("Lost Connection!\n");
         }
 
         void startAccept() {
-            Connection::pointer new_connection = Connection::create(io_service, this);
+            Connection::pointer new_connection = Connection::create(*io_service, this);
             acceptor->async_accept(new_connection->socket,
                 boost::bind(&Boardcaster_Impl_TCP::handleAccept, this, new_connection,
                   boost::asio::placeholders::error));
@@ -232,25 +243,47 @@ namespace {
         }
 
         virtual ~Boardcaster_Impl_TCP() {
-            io_service.stop();
+            io_service->stop();
+            thread.join();
+            acceptor.reset();
+            upstream.reset();
+            connections.clear();
+            delegate = NULL;
         }
 
         virtual void ioThread() {
-            io_service.run();
+            io_service.reset(new boost::asio::io_service());
+            upstream.reset(new tcp::socket(*io_service));
+            if(config_file.empty()) {
+                config.test(hostname.c_str());
+            } else {
+                config.read(config_file.c_str());
+                config.hostname = hostname;
+            }
+            if(!config.hosts[config.hostname].isConnect) {
+                acceptor.reset(new tcp::acceptor(*io_service, tcp::endpoint(tcp::v4(), config.hosts[config.hostname].port)));
+                startAccept();
+            }
+            connectUpstream();
+
+            io_service->run();
         }
 
         Config config;
 
-        boost::asio::io_service io_service;
+        boost::shared_ptr<boost::asio::io_service> io_service;
         boost::thread thread;
 
         boost::shared_ptr<tcp::acceptor> acceptor;
         set<Connection::pointer> connections;
-        tcp::socket upstream;
+        boost::shared_ptr<tcp::socket> upstream;
         MessageHeader message_header;
         vector<unsigned char> message_data;
 
         Delegate* delegate;
+
+        string hostname;
+        string config_file;
     };
 }
 
