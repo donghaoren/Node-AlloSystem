@@ -110,9 +110,12 @@ namespace {
                 boardcaster->addConnection(shared_from_this());
             }
 
-            void sendMessage(const void* data, size_t length) {
+            void sendMessage(const MessageHeader& header, const void* data, size_t length) {
+                vector<boost::asio::const_buffer> buffers;
+                buffers.push_back(boost::asio::buffer(&header, sizeof(MessageHeader)));
+                buffers.push_back(boost::asio::buffer(data, length));
                 boost::asio::async_write(socket,
-                    boost::asio::buffer(data, length),
+                    buffers,
                     boost::bind(&Connection::handleWrite, shared_from_this(),
                         boost::asio::placeholders::error
                     )
@@ -214,8 +217,7 @@ namespace {
             for(set<Connection::pointer>::iterator it = connections.begin(); it != connections.end(); it++) {
                 MessageHeader header;
                 header.length = length;
-                (*it)->sendMessage(&header, sizeof(MessageHeader));
-                (*it)->sendMessage(data, length);
+                (*it)->sendMessage(header, data, length);
             }
         }
 
