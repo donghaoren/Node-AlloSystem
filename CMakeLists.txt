@@ -63,9 +63,6 @@ INCLUDE_DIRECTORIES (
 #----------------------------------------------------------------------------------------------------------------------
 # Boost C++ Libraries
 
-  SET ( Boost_USE_STATIC_LIBS ON )
-  SET ( Boost_MULTITHREADED ON )
-  SET ( Boost_USE_STATIC_RUNTIME OFF )
   FIND_PACKAGE ( Boost REQUIRED COMPONENTS thread system )
   INCLUDE_DIRECTORIES ( ${Boost_INCLUDE_DIRS} )
 
@@ -99,6 +96,7 @@ INCLUDE_DIRECTORIES (
   TARGET_LINK_LIBRARIES ( node-boardcaster
     LINK_PRIVATE
       ${Boost_LIBRARIES}
+      pthread
   )
 
 #----------------------------------------------------------------------------------------------------------------------
