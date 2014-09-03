@@ -46,6 +46,26 @@
       "sources": [ "src/node_graphics.cpp" ]
     },
     {
+      "target_name": "node_boardcaster",
+      "include_dirs": [
+        "native/include"
+      ],
+      "libraries": [
+        "-L../native/lib", "-lnode-boardcaster"
+      ],
+      "cflags_cc": [
+        "-std=c++11"
+      ],
+      'conditions': [
+        [ 'OS=="mac"', {
+          'xcode_settings': {
+            'OTHER_CPLUSPLUSFLAGS' : ['-std=c++11']
+          },
+        } ],
+      ],
+      "sources": [ "src/node_boardcaster.cpp" ]
+    },
+    {
       "include_dirs": [
         "native/include"
       ],

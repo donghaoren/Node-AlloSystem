@@ -61,6 +61,15 @@ INCLUDE_DIRECTORIES (
 )
 
 #----------------------------------------------------------------------------------------------------------------------
+# Boost C++ Libraries
+
+  SET ( Boost_USE_STATIC_LIBS ON )
+  SET ( Boost_MULTITHREADED ON )
+  SET ( Boost_USE_STATIC_RUNTIME OFF )
+  FIND_PACKAGE ( Boost REQUIRED COMPONENTS thread system )
+  INCLUDE_DIRECTORIES ( ${Boost_INCLUDE_DIRS} )
+
+#----------------------------------------------------------------------------------------------------------------------
 # Skia Graphics Backend Library
 
   FIND_PACKAGE ( Skia )
@@ -79,6 +88,17 @@ INCLUDE_DIRECTORIES (
       ${Skia_LIBRARIES}
       ${OPENGL_LIBRARIES}
       ${GLEW_LIBRARIES}
+  )
+
+#----------------------------------------------------------------------------------------------------------------------
+# Boardcaster Library
+  ADD_LIBRARY ( node-boardcaster SHARED
+    src/boardcaster.cpp
+  )
+
+  TARGET_LINK_LIBRARIES ( node-boardcaster
+    LINK_PRIVATE
+      ${Boost_LIBRARIES}
   )
 
 #----------------------------------------------------------------------------------------------------------------------
@@ -108,6 +128,7 @@ INCLUDE_DIRECTORIES (
   INSTALL (
     FILES
       include/allosphere.h
+      include/boardcaster.h
       include/common.h
       include/graphics.h
       include/stream.h
@@ -125,6 +146,7 @@ INCLUDE_DIRECTORIES (
     TARGETS
       node-allosphere
       node-graphics
+      node-boardcaster
     RUNTIME DESTINATION bin
     LIBRARY DESTINATION lib
     ARCHIVE DESTINATION lib
