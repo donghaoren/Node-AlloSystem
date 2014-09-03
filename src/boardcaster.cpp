@@ -110,16 +110,23 @@ namespace {
                 boardcaster->addConnection(shared_from_this());
             }
 
+            struct WriteBuffer {
+                shared_ptr<vector<unsigned char> > total_data;
+                pointer self;
+                void operator()(const boost::system::error_code& error, size_t bytes) {
+                    self->handleWrite(error);
+                }
+            };
+
             void sendMessage(const MessageHeader& header, const void* data, size_t length) {
-                vector<boost::asio::const_buffer> buffers;
-                buffers.push_back(boost::asio::buffer(&header, sizeof(MessageHeader)));
-                buffers.push_back(boost::asio::buffer(data, length));
-                boost::asio::async_write(socket,
-                    buffers,
-                    boost::bind(&Connection::handleWrite, shared_from_this(),
-                        boost::asio::placeholders::error
-                    )
-                );
+                WriteBuffer buf;
+                buf.total_data.reset(new vector<unsigned char>());
+                vector<unsigned char>& total_data = *buf.total_data;
+                total_data.resize(sizeof(MessageHeader) + length);
+                buf.self = shared_from_this();
+                memcpy(&total_data[0], &header, sizeof(MessageHeader));
+                memcpy(&total_data[sizeof(MessageHeader)], data, length);
+                boost::asio::async_write(socket, boost::asio::buffer(total_data), buf);
             }
 
             void handleWrite(const boost::system::error_code& error) {
