@@ -120,9 +120,8 @@ namespace {
 
             void sendMessage(const MessageHeader& header, const void* data, size_t length) {
                 WriteBuffer buf;
-                buf.total_data.reset(new vector<unsigned char>());
+                buf.total_data.reset(new vector<unsigned char>(sizeof(MessageHeader) + length));
                 vector<unsigned char>& total_data = *buf.total_data;
-                total_data.resize(sizeof(MessageHeader) + length);
                 buf.self = shared_from_this();
                 memcpy(&total_data[0], &header, sizeof(MessageHeader));
                 memcpy(&total_data[sizeof(MessageHeader)], data, length);
