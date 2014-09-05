@@ -11,6 +11,7 @@
 #include <boost/algorithm/string/split.hpp>
 
 #include <fstream>
+#include <deque>
 
 using namespace std;
 using boost::asio::ip::tcp;
@@ -87,17 +88,18 @@ namespace {
         int length;
     };
 
+    typedef shared_ptr<vector<unsigned char> > data_ptr;
+
     class Boardcaster_Impl_TCP : public Boardcaster {
     public:
 
         class Connection : public boost::enable_shared_from_this<Connection> {
         public:
-            MessageHeader header;
 
             Connection(boost::asio::io_service& io_service, Boardcaster_Impl_TCP* boardcaster_)
             : socket(io_service) {
-                buffer_size = 16;
                 boardcaster = boardcaster_;
+                is_writing = false;
             }
 
             typedef boost::shared_ptr<Connection> pointer;
@@ -110,22 +112,32 @@ namespace {
                 boardcaster->addConnection(shared_from_this());
             }
 
+            deque<data_ptr> write_queue;
+
             struct WriteBuffer {
-                shared_ptr<vector<unsigned char> > total_data;
+                data_ptr total_data;
                 pointer self;
                 void operator()(const boost::system::error_code& error, size_t bytes) {
                     self->handleWrite(error);
                 }
             };
 
-            void sendMessage(const MessageHeader& header, const void* data, size_t length) {
+            bool is_writing;
+            void check_write() {
+                if(write_queue.empty() || is_writing) return;
+                data_ptr data = write_queue.front();
+                write_queue.pop_front();
+
                 WriteBuffer buf;
-                buf.total_data.reset(new vector<unsigned char>(sizeof(MessageHeader) + length));
-                vector<unsigned char>& total_data = *buf.total_data;
+                buf.total_data = data;
                 buf.self = shared_from_this();
-                memcpy(&total_data[0], &header, sizeof(MessageHeader));
-                memcpy(&total_data[sizeof(MessageHeader)], data, length);
-                boost::asio::async_write(socket, boost::asio::buffer(total_data), buf);
+                boost::asio::async_write(socket, boost::asio::buffer(*data), buf);
+                is_writing = true;
+            }
+
+            void sendMessage(const data_ptr& data) {
+                write_queue.push_back(data);
+                check_write();
             }
 
             void handleWrite(const boost::system::error_code& error) {
@@ -133,11 +145,12 @@ namespace {
                     boardcaster->removeConnection(shared_from_this());
                     return;
                 }
+                is_writing = false;
+                check_write();
             }
 
             ~Connection() { }
 
-            int buffer_size;
             tcp::socket socket;
             Boardcaster_Impl_TCP* boardcaster;
         };
@@ -192,9 +205,10 @@ namespace {
                 connectUpstream();
                 return;
             }
-            message_data.resize(message_header.length);
+            message_data.resize(sizeof(MessageHeader) + message_header.length);
+            memcpy(&message_data[0], &message_header, sizeof(MessageHeader));
             boost::asio::async_read(*upstream,
-                boost::asio::buffer(message_data),
+                boost::asio::buffer(&message_data[sizeof(MessageHeader)], message_header.length),
                 boost::bind(&Boardcaster_Impl_TCP::handleReadData, this,
                     boost::asio::placeholders::error
                 )
@@ -206,9 +220,9 @@ namespace {
                 connectUpstream();
                 return;
             }
-            sendMessage(&message_data[0], message_header.length);
+            relayMessage(data_ptr(new vector<unsigned char>(message_data)));
             if(delegate) {
-                delegate->onMessage(&message_data[0], message_header.length);
+                delegate->onMessage(&message_data[sizeof(message_header)], message_header.length);
             }
             readUpstreamMessage();
         }
@@ -220,10 +234,16 @@ namespace {
         // Send message to all clients.
         // Only "ROOT" can do that.
         virtual void sendMessage(const void* data, size_t length) {
+            // for(set<Connection::pointer>::iterator it = connections.begin(); it != connections.end(); it++) {
+            //     MessageHeader header;
+            //     header.length = length;
+            //     (*it)->sendMessage(header, data, length);
+            // }
+        }
+
+        virtual void relayMessage(const data_ptr& data) {
             for(set<Connection::pointer>::iterator it = connections.begin(); it != connections.end(); it++) {
-                MessageHeader header;
-                header.length = length;
-                (*it)->sendMessage(header, data, length);
+                (*it)->sendMessage(data);
             }
         }
 
