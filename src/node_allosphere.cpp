@@ -1,4 +1,5 @@
 #include <node.h>
+#include <node_buffer.h>
 #include <v8.h>
 
 #include <string>
@@ -21,9 +22,14 @@ public:
         }
     }
 
-    virtual void onDraw() {
+    virtual void onDraw(const iv::al::DrawInfo& info) {
         if(!onDrawCallback.IsEmpty()) {
-            onDrawCallback->Call(Context::GetCurrent()->Global(), 0, NULL);
+            HandleScope scope;
+            const int argc = 1;
+            Local<Object> info_obj = Object::New();
+            Local<Value> argv[argc] = { Local<Value>::New(info_obj) };
+            info_obj->Set(String::NewSymbol("eye"), Number::New(info.eye));
+            onDrawCallback->Call(Context::GetCurrent()->Global(), argc, argv);
         }
     }
 
@@ -92,6 +98,59 @@ Handle<Value> EXPORT_onDraw(const Arguments& args) {
     return Undefined();
 }
 
+Handle<Value> EXPORT_shaderCreate(const Arguments& args) {
+    String::Utf8Value vert(args[0]);
+    std::string vert_(*vert, *vert + vert.length());
+    String::Utf8Value frag(args[1]);
+    std::string frag_(*frag, *frag + frag.length());
+    int index = application->app->shaderCreate(vert_.c_str(), frag_.c_str());
+    return Integer::New(index);
+}
+
+Handle<Value> EXPORT_shaderDelete(const Arguments& args) {
+    application->app->shaderDelete(args[0]->IntegerValue());
+    return Undefined();
+}
+
+Handle<Value> EXPORT_shaderDefault(const Arguments& args) {
+    return Integer::New(application->app->shaderDefault());
+}
+
+Handle<Value> EXPORT_shaderBegin(const Arguments& args) {
+    application->app->shaderBegin(args[0]->IntegerValue());
+    return Undefined();
+}
+
+Handle<Value> EXPORT_shaderEnd(const Arguments& args) {
+    application->app->shaderEnd(args[0]->IntegerValue());
+    return Undefined();
+}
+
+Handle<Value> EXPORT_textureCreate(const Arguments& args) {
+    int id = application->app->textureCreate();
+    return Integer::New(id);
+}
+
+Handle<Value> EXPORT_textureDelete(const Arguments& args) {
+    application->app->textureDelete(args[0]->IntegerValue());
+    return Undefined();
+}
+
+Handle<Value> EXPORT_textureBind(const Arguments& args) {
+    application->app->textureBind(args[0]->IntegerValue(), args[1]->IntegerValue());
+    return Undefined();
+}
+
+Handle<Value> EXPORT_textureUnbind(const Arguments& args) {
+    application->app->textureUnbind(args[0]->IntegerValue(), args[1]->IntegerValue());
+    return Undefined();
+}
+
+Handle<Value> EXPORT_textureSubmit(const Arguments& args) {
+    application->app->textureSubmit(args[0]->IntegerValue(), args[1]->IntegerValue(), node::Buffer::Data(args[2]));
+    return Undefined();
+}
+
 Handle<Value> EXPORT_shaderUniformi(const Arguments& args) {
     String::Utf8Value name(args[0]);
     std::string name_(*name, *name + name.length());
@@ -110,6 +169,16 @@ void NODE_init(Handle<Object> exports) {
   exports->Set(String::NewSymbol("tick"), FunctionTemplate::New(EXPORT_tick)->GetFunction());
   exports->Set(String::NewSymbol("onFrame"), FunctionTemplate::New(EXPORT_onFrame)->GetFunction());
   exports->Set(String::NewSymbol("onDraw"), FunctionTemplate::New(EXPORT_onDraw)->GetFunction());
+  exports->Set(String::NewSymbol("shaderCreate"), FunctionTemplate::New(EXPORT_shaderCreate)->GetFunction());
+  exports->Set(String::NewSymbol("shaderDelete"), FunctionTemplate::New(EXPORT_shaderDelete)->GetFunction());
+  exports->Set(String::NewSymbol("shaderDefault"), FunctionTemplate::New(EXPORT_shaderDefault)->GetFunction());
+  exports->Set(String::NewSymbol("shaderBegin"), FunctionTemplate::New(EXPORT_shaderBegin)->GetFunction());
+  exports->Set(String::NewSymbol("shaderEnd"), FunctionTemplate::New(EXPORT_shaderEnd)->GetFunction());
+  exports->Set(String::NewSymbol("textureCreate"), FunctionTemplate::New(EXPORT_textureCreate)->GetFunction());
+  exports->Set(String::NewSymbol("textureDelete"), FunctionTemplate::New(EXPORT_textureDelete)->GetFunction());
+  exports->Set(String::NewSymbol("textureBind"), FunctionTemplate::New(EXPORT_textureBind)->GetFunction());
+  exports->Set(String::NewSymbol("textureSubmit"), FunctionTemplate::New(EXPORT_textureSubmit)->GetFunction());
+  exports->Set(String::NewSymbol("textureUnbind"), FunctionTemplate::New(EXPORT_textureUnbind)->GetFunction());
   exports->Set(String::NewSymbol("shaderUniformi"), FunctionTemplate::New(EXPORT_shaderUniformi)->GetFunction());
   exports->Set(String::NewSymbol("shaderUniformf"), FunctionTemplate::New(EXPORT_shaderUniformf)->GetFunction());
   gl_factory = new GlFactory();
