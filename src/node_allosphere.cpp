@@ -157,11 +157,32 @@ Handle<Value> EXPORT_shaderUniformi(const Arguments& args) {
     application->app->shaderUniformi(name_.c_str(), args[1]->IntegerValue());
     return Undefined();
 }
+
 Handle<Value> EXPORT_shaderUniformf(const Arguments& args) {
   String::Utf8Value name(args[0]);
     std::string name_(*name, *name + name.length());
     application->app->shaderUniformf(name_.c_str(), args[1]->NumberValue());
     return Undefined();
+}
+
+Handle<Value> EXPORT_setLens(const Arguments& args) {
+  iv::al::Lens lens;
+  lens.eye_separation = args[0]->NumberValue();
+  application->app->setLens(lens);
+  return Undefined();
+}
+
+Handle<Value> EXPORT_setPose(const Arguments& args) {
+  iv::al::Pose pose;
+  pose.position.x = args[0]->NumberValue();
+  pose.position.y = args[1]->NumberValue();
+  pose.position.z = args[2]->NumberValue();
+  pose.rotation.v.x = args[3]->NumberValue();
+  pose.rotation.v.y = args[4]->NumberValue();
+  pose.rotation.v.z = args[5]->NumberValue();
+  pose.rotation.w = args[6]->NumberValue();
+  application->app->setPose(pose);
+  return Undefined();
 }
 
 void NODE_init(Handle<Object> exports) {
@@ -181,6 +202,8 @@ void NODE_init(Handle<Object> exports) {
   exports->Set(String::NewSymbol("textureUnbind"), FunctionTemplate::New(EXPORT_textureUnbind)->GetFunction());
   exports->Set(String::NewSymbol("shaderUniformi"), FunctionTemplate::New(EXPORT_shaderUniformi)->GetFunction());
   exports->Set(String::NewSymbol("shaderUniformf"), FunctionTemplate::New(EXPORT_shaderUniformf)->GetFunction());
+  exports->Set(String::NewSymbol("setLens"), FunctionTemplate::New(EXPORT_setLens)->GetFunction());
+  exports->Set(String::NewSymbol("setPose"), FunctionTemplate::New(EXPORT_setPose)->GetFunction());
   gl_factory = new GlFactory();
   exports->Set(String::NewSymbol("OpenGL"), gl_factory->createGl()->NewInstance());
 }

@@ -165,12 +165,12 @@ namespace iv { namespace al {
         }
 
         virtual void setPose(const Pose& pose_) {
-            mNav.pos().x = pose_.position.x;
-            mNav.pos().y = pose_.position.y;
-            mNav.pos().z = pose_.position.z;
-            mNav.quat().x = pose_.rotation.v.x;
-            mNav.quat().y = pose_.rotation.v.y;
-            mNav.quat().z = pose_.rotation.v.z;
+            mNav.pos().z = pose_.position.x;
+            mNav.pos().x = pose_.position.y;
+            mNav.pos().y = pose_.position.z;
+            mNav.quat().z = pose_.rotation.v.x;
+            mNav.quat().x = pose_.rotation.v.y;
+            mNav.quat().y = pose_.rotation.v.z;
             mNav.quat().w = pose_.rotation.w;
         }
 
@@ -266,14 +266,20 @@ namespace iv { namespace al {
         inline std::string default_vertex_code() {
             return AL_STRINGIFY(
                 varying vec4 color;
-                varying vec3 normal, lightDir, eyeVec;
+                varying vec3 normal, light_direction, eye_vector;
+                vec4 iv_to_al(in vec4 v) {
+                    return vec4(v.y, v.z, v.x, v.w);
+                }
+                vec3 iv_to_al_3(in vec3 v) {
+                    return vec3(v.y, v.z, v.x);
+                }
                 void main() {
                     color = gl_Color;
-                    vec4 vertex = gl_ModelViewMatrix * gl_Vertex;
-                    normal = gl_NormalMatrix * gl_Normal;
+                    vec4 vertex = gl_ModelViewMatrix * iv_to_al(gl_Vertex);
+                    normal = gl_NormalMatrix * iv_to_al_3(gl_Normal);
                     vec3 V = vertex.xyz;
-                    eyeVec = normalize(-V);
-                    lightDir = normalize(vec3(gl_LightSource[0].position.xyz - V));
+                    eye_vector = normalize(-V);
+                    light_direction = normalize(vec3(gl_LightSource[0].position.xyz - V));
                     gl_TexCoord[0] = gl_MultiTexCoord0;
                     gl_Position = omni_render(vertex);
                 }
@@ -286,7 +292,7 @@ namespace iv { namespace al {
                 uniform float texture;
                 uniform sampler2D texture0;
                 varying vec4 color;
-                varying vec3 normal, lightDir, eyeVec;
+                varying vec3 normal, light_direction, eye_vector;
                 void main() {
                     vec4 colorMixed;
                     if(texture > 0.0) {
@@ -297,10 +303,10 @@ namespace iv { namespace al {
                     }
                     vec4 final_color = colorMixed * gl_LightSource[0].ambient;
                     vec3 N = normalize(normal);
-                    vec3 L = lightDir;
+                    vec3 L = light_direction;
                     float lambertTerm = max(dot(N, L), 0.0);
                     final_color += gl_LightSource[0].diffuse * colorMixed * lambertTerm;
-                    vec3 E = eyeVec;
+                    vec3 E = eye_vector;
                     vec3 R = reflect(-L, N);
                     float spec = pow(max(dot(R, E), 0.0), 0.9 + 1e-20);
                     final_color += gl_LightSource[0].specular * spec;
