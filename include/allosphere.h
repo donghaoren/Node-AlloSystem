@@ -7,6 +7,7 @@ namespace iv {
 
         struct Lens {
             double eye_separation;
+            double focal_distance;
         };
 
         struct Pose {

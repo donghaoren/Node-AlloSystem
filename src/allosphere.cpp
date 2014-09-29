@@ -14,6 +14,8 @@
 
 using namespace ::al;
 
+#define str(x) #x
+
 namespace iv { namespace al {
 
     // class ApplicationImpl : public ::al::OmniApp, public Application {
@@ -100,8 +102,9 @@ namespace iv { namespace al {
     public:
 
         ApplicationImpl() {
-            mLens.near(0.01).far(40).eyeSep(0.03);
+            mLens.near(0.01).far(40).eyeSep(0.1);
             mNav.smooth(0.8);
+            mRadius = 5;
 
             Window::dimensions(Window::Dim(800, 400));
             Window::title("AllosphereNodejsApplication");
@@ -162,6 +165,7 @@ namespace iv { namespace al {
 
         virtual void setLens(const Lens& lens_) {
             mLens.eyeSep(lens_.eye_separation);
+            mRadius = lens_.focal_distance;
         }
 
         virtual void setPose(const Pose& pose_) {
@@ -188,10 +192,66 @@ namespace iv { namespace al {
             ::al::Main::get().tick();
         }
 
+        std::string per_vertex_glsl() { return str(
+            uniform float omni_eye;
+            uniform int omni_face;
+            uniform float omni_radius;
+            uniform float omni_near;
+            uniform float omni_far;
+            vec4 omni_render(in vec4 vertex) {
+                float l = length(vertex.xz);
+                vec3 vn = normalize(vertex.xyz);
+                float displacement = omni_eye *
+                  (omni_radius * omni_radius -
+                     sqrt(l * l * omni_radius * omni_radius +
+                          omni_eye * omni_eye * (omni_radius * omni_radius - l * l))) /
+                  (omni_radius * omni_radius - omni_eye * omni_eye);
+
+                // omni-stereo effect (in eyespace XZ plane)
+                // cross-product with up vector also ensures stereo fades out at Y
+                // poles
+                // v.xyz -= omni_eye * cross(vn, vec3(0, 1, 0));
+                // simplified:
+                vertex.xz += vec2(displacement * vn.z, displacement * -vn.x);
+                // convert eye-space into cubemap-space:
+                // GL_TEXTURE_CUBE_MAP_POSITIVE_X
+                if (omni_face == 0) {
+                  vertex.xyz = vec3(-vertex.z, -vertex.y, -vertex.x);
+                }
+                    // GL_TEXTURE_CUBE_MAP_NEGATIVE_X
+                    else if (omni_face == 1) {
+                  vertex.xyz = vec3(vertex.z, -vertex.y, vertex.x);
+                }
+                    // GL_TEXTURE_CUBE_MAP_POSITIVE_Y
+                    else if (omni_face == 2) {
+                  vertex.xyz = vec3(vertex.x, vertex.z, -vertex.y);
+                }
+                    // GL_TEXTURE_CUBE_MAP_NEGATIVE_Y
+                    else if (omni_face == 3) {
+                  vertex.xyz = vec3(vertex.x, -vertex.z, vertex.y);
+                }
+                    // GL_TEXTURE_CUBE_MAP_POSITIVE_Z
+                    else if (omni_face == 4) {
+                  vertex.xyz = vec3(vertex.x, -vertex.y, -vertex.z);
+                }
+                    // GL_TEXTURE_CUBE_MAP_NEGATIVE_Z
+                    else {
+                  vertex.xyz = vec3(-vertex.x, -vertex.y, vertex.z);
+                }
+                // convert into screen-space:
+                // simplified perspective projection since fovy = 90 and aspect = 1
+                vertex.zw = vec2((vertex.z * (omni_far + omni_near) +
+                                  vertex.w * omni_far * omni_near * 2.) /
+                                     (omni_near - omni_far),
+                                 -vertex.z);
+                return vertex;
+            }
+        ); }
+
         virtual int shaderCreate(const char* vertex_code, const char* fragment_code) {
             ShaderProgram* shader = new ShaderProgram();
             Shader vert, frag;
-            vert.source(OmniStereo::glsl() + vertex_code, Shader::VERTEX).compile();
+            vert.source(per_vertex_glsl() + vertex_code, Shader::VERTEX).compile();
             vert.printLog();
             frag.source(fragment_code, Shader::FRAGMENT).compile();
             frag.printLog();
@@ -211,6 +271,7 @@ namespace iv { namespace al {
             mCurrentShader = mShaders[id];
             mCurrentShader->begin();
             mOmni.uniforms(*mCurrentShader);
+            mCurrentShader->uniform("omni_radius", mRadius);
         }
 
         virtual void shaderEnd(int id) {
@@ -279,7 +340,7 @@ namespace iv { namespace al {
                     normal = gl_NormalMatrix * iv_to_al_3(gl_Normal);
                     vec3 V = vertex.xyz;
                     eye_vector = normalize(-V);
-                    light_direction = normalize(vec3(gl_LightSource[0].position.xyz - V));
+                    light_direction = normalize(vec3(iv_to_al_3(gl_LightSource[0].position.xyz) - V));
                     gl_TexCoord[0] = gl_MultiTexCoord0;
                     gl_Position = omni_render(vertex);
                 }
@@ -316,6 +377,7 @@ namespace iv { namespace al {
         }
 
         ::al::Lens mLens;
+        float mRadius;
         ::al::Graphics mGraphics;
         ::al::Nav mNav;
 

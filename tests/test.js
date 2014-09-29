@@ -118,22 +118,23 @@ allosphere.onDraw(function(info) {
     allosphere.shaderUniformi("texture0", 2);
     allosphere.shaderUniformf("lighting", 0);
 
+    var sc = (Math.sin(frame_time) * 0 + 5) / Math.sqrt(2*2+5*5);
 
     GL.begin(GL.QUADS);
-    GL.texCoord2f(0, 0); GL.normal3f(0, 0, 1); GL.vertex3f(-2,  2, -1.5);
-    GL.texCoord2f(0, 1); GL.normal3f(0, 0, 1); GL.vertex3f(-2, -2, -1.5);
-    GL.texCoord2f(1, 1); GL.normal3f(0, 0, 1); GL.vertex3f( 2, -2, -1.5);
-    GL.texCoord2f(1, 0); GL.normal3f(0, 0, 1); GL.vertex3f( 2,  2, -1.5);
+    GL.texCoord2f(0, 0); GL.normal3f(0, 1, 0); GL.vertex3f(  2*sc, -5*sc, -2*sc);
+    GL.texCoord2f(0, 1); GL.normal3f(0, 1, 0); GL.vertex3f( -2*sc, -5*sc, -2*sc);
+    GL.texCoord2f(1, 1); GL.normal3f(0, 1, 0); GL.vertex3f( -2*sc, -5*sc,  2*sc);
+    GL.texCoord2f(1, 0); GL.normal3f(0, 1, 0); GL.vertex3f(  2*sc, -5*sc,  2*sc);
     GL.end();
 
     s.unbindTexture(2);
     allosphere.shaderEnd(id);
 
     var t = frame_time;
-    GL.pushMatrix();
+    //GL.pushMatrix();
     //GL.rotatef(t * 30, 1, 1, 0);
     pana_renderer.render(pana_texture.textures, info);
-    GL.popMatrix();
+    //GL.popMatrix();
 });
 
 var saved = false;

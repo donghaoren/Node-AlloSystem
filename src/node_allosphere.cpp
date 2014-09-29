@@ -168,6 +168,7 @@ Handle<Value> EXPORT_shaderUniformf(const Arguments& args) {
 Handle<Value> EXPORT_setLens(const Arguments& args) {
   iv::al::Lens lens;
   lens.eye_separation = args[0]->NumberValue();
+  lens.focal_distance = args[1]->NumberValue();
   application->app->setLens(lens);
   return Undefined();
 }
