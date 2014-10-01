@@ -36,6 +36,12 @@ namespace {
     inline double to_degree(double rad) {
         return rad / PI * 180.0;
     }
+    inline double to_degree_mod(double rad) {
+        double deg = rad / PI * 180.0;
+        deg = fmod(deg, 360.0);
+        if(deg < 0) deg += 360.0;
+        return deg;
+    }
 
     SkColor convert_color(const Color& c) {
         int r = c.r * 255; if(r < 0) r = 0; if(r > 255) r = 255;
@@ -101,7 +107,12 @@ namespace {
         virtual void arc(double x, double y, double radius, double angle1, double angle2) {
             angle1 = to_degree(angle1);
             angle2 = to_degree(angle2);
-            skpath.addArc(SkRect::MakeXYWH(x - radius, y - radius, radius * 2, radius * 2), angle1, angle1 - angle2);
+            double sweep = angle2 - angle1;
+            if(sweep < 0) {
+                sweep = fmod(sweep, 360);
+                if(sweep < 0) sweep += 360;
+            }
+            skpath.addArc(SkRect::MakeXYWH(x - radius, y - radius, radius * 2, radius * 2), angle1, sweep);
         }
 
         virtual void close() {
