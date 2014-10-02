@@ -13,7 +13,7 @@ public:
     virtual size_t read(void* buffer, size_t length);
     virtual size_t write(const void* buffer, size_t length);
     virtual void seek(SeekOrigin origin, std::ptrdiff_t pos);
-    virtual size_t position();
+    virtual std::ptrdiff_t position();
     virtual void flush();
     virtual bool canRead();
     virtual bool canWrite();

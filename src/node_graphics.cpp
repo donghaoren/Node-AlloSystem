@@ -137,6 +137,81 @@ v8::Handle<v8::Value> NODE_Surface2D::NODE_save(const v8::Arguments& args) {
     return args.This();
 }
 
+void NODE_VideoSurface2D::Init(Handle<Object> exports) {
+    // Prepare constructor template
+    Local<FunctionTemplate> tpl = FunctionTemplate::New(New);
+    tpl->SetClassName(String::NewSymbol("VideoSurface2D"));
+    tpl->InstanceTemplate()->SetInternalFieldCount(1);
+
+    // Prototype
+    tpl->PrototypeTemplate()->Set(
+        String::NewSymbol("width"), FunctionTemplate::New(NODE_width)->GetFunction());
+    tpl->PrototypeTemplate()->Set(
+        String::NewSymbol("height"), FunctionTemplate::New(NODE_height)->GetFunction());
+    tpl->PrototypeTemplate()->Set(
+        String::NewSymbol("pixels"), FunctionTemplate::New(NODE_pixels)->GetFunction());
+    tpl->PrototypeTemplate()->Set(
+        String::NewSymbol("nextFrame"), FunctionTemplate::New(NODE_nextFrame)->GetFunction());
+    tpl->PrototypeTemplate()->Set(
+        String::NewSymbol("seek"), FunctionTemplate::New(NODE_seek)->GetFunction());
+
+    constructor = Persistent<Function>::New(tpl->GetFunction());
+
+    // Export constructor.
+    exports->Set(String::NewSymbol("VideoSurface2D"), constructor);
+}
+
+NODE_VideoSurface2D::NODE_VideoSurface2D(const char* filename) {
+    stream = iv::ByteStream::OpenFile(filename, "r");
+    video = iv::graphics::VideoSurface2D::FromStream(stream);
+}
+
+NODE_VideoSurface2D::~NODE_VideoSurface2D() {
+    delete video;
+    if(stream) delete stream;
+}
+
+v8::Handle<v8::Value> NODE_VideoSurface2D::New(const v8::Arguments& args) {
+    HandleScope scope;
+
+    if(args.IsConstructCall()) {
+        String::Utf8Value str(args[0]);
+        NODE_VideoSurface2D* obj = new NODE_VideoSurface2D(std::string(*str, *str + str.length()).c_str());
+        obj->Wrap(args.This());
+        return args.This();
+    } else {
+        // Invoked as plain function `MyObject(...)`, turn into construct call.
+        const int argc = 2;
+        Local<Value> argv[argc] = { args[0], args[1] };
+        return scope.Close(constructor->NewInstance(argc, argv));
+    }
+}
+
+v8::Handle<v8::Value> NODE_VideoSurface2D::NODE_width(const v8::Arguments& args) {
+    NODE_VideoSurface2D* obj = ObjectWrap::Unwrap<NODE_VideoSurface2D>(args.This());
+    return Uint32::New(obj->video->width());
+}
+
+v8::Handle<v8::Value> NODE_VideoSurface2D::NODE_height(const v8::Arguments& args) {
+    NODE_VideoSurface2D* obj = ObjectWrap::Unwrap<NODE_VideoSurface2D>(args.This());
+    return Uint32::New(obj->video->height());
+}
+
+v8::Handle<v8::Value> NODE_VideoSurface2D::NODE_pixels(const v8::Arguments& args) {
+    NODE_VideoSurface2D* obj = ObjectWrap::Unwrap<NODE_VideoSurface2D>(args.This());
+    return node::Buffer::New((char*)obj->video->pixels(), obj->video->width() * obj->video->height() * 4, do_nothing_callback2, NULL)->handle_;
+}
+
+v8::Handle<v8::Value> NODE_VideoSurface2D::NODE_nextFrame(const v8::Arguments& args) {
+    NODE_VideoSurface2D* obj = ObjectWrap::Unwrap<NODE_VideoSurface2D>(args.This());
+    obj->video->nextFrame();
+    return args.This();
+}
+
+v8::Handle<v8::Value> NODE_VideoSurface2D::NODE_seek(const v8::Arguments& args) {
+    // TODO...
+}
+
 void NODE_GraphicalContext2D::Init(Handle<Object> exports) {
     // Prepare constructor template
     Local<FunctionTemplate> tpl = FunctionTemplate::New(New);
@@ -684,6 +759,7 @@ v8::Handle<v8::Value> NODE_Paint2D::NODE_clone(const v8::Arguments& args) {
 }
 
 Persistent<Function> NODE_Surface2D::constructor;
+Persistent<Function> NODE_VideoSurface2D::constructor;
 Persistent<Function> NODE_GraphicalContext2D::constructor;
 Persistent<Function> NODE_Path2D::constructor;
 Persistent<Function> NODE_Paint2D::constructor;
@@ -700,6 +776,7 @@ void NODE_init(Handle<Object> exports) {
 
     // Classes.
     NODE_Surface2D::Init(exports);
+    NODE_VideoSurface2D::Init(exports);
     NODE_GraphicalContext2D::Init(exports);
     NODE_Path2D::Init(exports);
     NODE_Paint2D::Init(exports);

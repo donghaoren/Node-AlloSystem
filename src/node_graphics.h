@@ -34,6 +34,29 @@ private:
     static v8::Persistent<v8::Function> constructor;
 };
 
+class NODE_VideoSurface2D : public node::ObjectWrap {
+public:
+
+    static void Init(v8::Handle<v8::Object> exports);
+
+    iv::graphics::VideoSurface2D* video;
+    iv::ByteStream* stream;
+
+private:
+    explicit NODE_VideoSurface2D(const char* filename);
+    ~NODE_VideoSurface2D();
+
+    static v8::Handle<v8::Value> New(const v8::Arguments& args);
+
+    static v8::Handle<v8::Value> NODE_width(const v8::Arguments& args);
+    static v8::Handle<v8::Value> NODE_height(const v8::Arguments& args);
+    static v8::Handle<v8::Value> NODE_nextFrame(const v8::Arguments& args);
+    static v8::Handle<v8::Value> NODE_seek(const v8::Arguments& args);
+    static v8::Handle<v8::Value> NODE_pixels(const v8::Arguments& args);
+
+    static v8::Persistent<v8::Function> constructor;
+};
+
 class NODE_GraphicalContext2D : public node::ObjectWrap {
 public:
     static void Init(v8::Handle<v8::Object> exports);

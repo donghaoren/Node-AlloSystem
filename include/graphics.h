@@ -14,6 +14,7 @@ namespace graphics {
     class Path2D;
     class Paint2D;
     class Surface2D;
+    class GraphicalBackend;
 
     enum class LineCap : short {
         BUTT   = 0,
@@ -197,6 +198,25 @@ namespace graphics {
         virtual void save(ByteStream* stream) = 0;
 
         virtual ~Surface2D() { }
+
+    };
+
+    class VideoSurface2D {
+    public:
+
+        virtual int width() const = 0;
+        virtual int height() const = 0;
+
+        virtual int frameCount() = 0;
+        virtual void seek(int frame_index) = 0;
+        virtual bool nextFrame() = 0;
+        virtual double fps() = 0;
+
+        virtual const void* pixels() const = 0;
+
+        virtual ~VideoSurface2D() { }
+
+        static VideoSurface2D* FromStream(ByteStream* stream);
 
     };
 

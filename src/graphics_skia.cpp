@@ -715,6 +715,7 @@ namespace {
             }
             return createSurface2DFromImage(&buffer[0], buffer.size());
         }
+
         virtual Surface2D* createSurface2DFromImage(const void* data, size_t length) {
             Surface2D_Bitmap* surface = new Surface2D_Bitmap();
             if(SkImageDecoder::DecodeMemory(data, length, &surface->bitmap, kRGBA_8888_SkColorType, SkImageDecoder::kDecodePixels_Mode)) {

@@ -6,7 +6,7 @@ IVNS_BEGIN
 size_t ByteStream::read(void* buffer, size_t length) { return 0; }
 size_t ByteStream::write(const void* buffer, size_t length) { return 0; }
 void ByteStream::seek(SeekOrigin origin, std::ptrdiff_t pos) { }
-size_t ByteStream::position() { return 0; }
+std::ptrdiff_t ByteStream::position() { return 0; }
 void ByteStream::flush() { }
 bool ByteStream::canRead() { return false; }
 bool ByteStream::canWrite() { return false; }
@@ -35,7 +35,7 @@ namespace {
                 case END: fseek(fp, pos, SEEK_END); break;
             }
         }
-        virtual size_t position() {
+        virtual std::ptrdiff_t position() {
             return ftell(fp);
         }
         virtual void flush() {
