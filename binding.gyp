@@ -46,12 +46,12 @@
       "sources": [ "src/node_graphics.cpp" ]
     },
     {
-      "target_name": "node_boardcaster",
+      "target_name": "node_broadcaster",
       "include_dirs": [
         "native/include"
       ],
       "libraries": [
-        "-L../native/lib", "-lnode-boardcaster"
+        "-L../native/lib", "-lnode-broadcaster"
       ],
       "cflags_cc": [
         "-std=c++11"
@@ -63,7 +63,7 @@
           },
         } ],
       ],
-      "sources": [ "src/node_boardcaster.cpp" ]
+      "sources": [ "src/node_broadcaster.cpp" ]
     },
     {
       "include_dirs": [

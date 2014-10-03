@@ -1,4 +1,4 @@
-#include "boardcaster.h"
+#include "broadcaster.h"
 
 #include <string>
 #include <vector>
@@ -15,6 +15,7 @@
 
 using namespace std;
 using boost::asio::ip::tcp;
+using boost::asio::ip::udp;
 
 namespace {
 
@@ -37,6 +38,10 @@ namespace {
     struct Config {
         string hostname;
         map<string, Host> hosts;
+        string udp_broadcast;
+        int udp_broadcast_port;
+        string udp_listen;
+        int udp_listen_port;
 
         void test(const char* hostname_) {
             hosts["gr01"] = Host("127.0.0.1", 60110, true);
@@ -77,6 +82,12 @@ namespace {
                         if(args[4] == "upstream") host.upstream = args[5];
                     }
                     hosts[name] = host;
+                } else if(args[0] == "udp-broadcast") {
+                    udp_broadcast = args[1];
+                    udp_broadcast_port = atoi(args[2].c_str());
+                } else if(args[0] == "udp-listen") {
+                    udp_listen = args[1];
+                    udp_listen_port = atoi(args[2].c_str());
                 } else {
                     throw std::invalid_argument("Error reading configuration file: invalid command '" + args[0] + "'.");
                 }
@@ -90,26 +101,26 @@ namespace {
 
     typedef shared_ptr<vector<unsigned char> > data_ptr;
 
-    class Boardcaster_Impl_TCP : public Boardcaster {
+    class Broadcaster_Impl_TCP : public Broadcaster {
     public:
 
         class Connection : public boost::enable_shared_from_this<Connection> {
         public:
 
-            Connection(boost::asio::io_service& io_service, Boardcaster_Impl_TCP* boardcaster_)
+            Connection(boost::asio::io_service& io_service, Broadcaster_Impl_TCP* broadcaster_)
             : socket(io_service) {
-                boardcaster = boardcaster_;
+                broadcaster = broadcaster_;
                 is_writing = false;
             }
 
             typedef boost::shared_ptr<Connection> pointer;
 
-            static pointer create(boost::asio::io_service& io_service, Boardcaster_Impl_TCP* boardcaster) {
-                return pointer(new Connection(io_service, boardcaster));
+            static pointer create(boost::asio::io_service& io_service, Broadcaster_Impl_TCP* broadcaster) {
+                return pointer(new Connection(io_service, broadcaster));
             }
 
             void start() {
-                boardcaster->addConnection(shared_from_this());
+                broadcaster->addConnection(shared_from_this());
             }
 
             deque<data_ptr> write_queue;
@@ -142,7 +153,7 @@ namespace {
 
             void handleWrite(const boost::system::error_code& error) {
                 if(error) {
-                    boardcaster->removeConnection(shared_from_this());
+                    broadcaster->removeConnection(shared_from_this());
                     return;
                 }
                 is_writing = false;
@@ -152,14 +163,14 @@ namespace {
             ~Connection() { }
 
             tcp::socket socket;
-            Boardcaster_Impl_TCP* boardcaster;
+            Broadcaster_Impl_TCP* broadcaster;
         };
 
-        Boardcaster_Impl_TCP(const char* hostname_, const char* config_file_) {
+        Broadcaster_Impl_TCP(const char* hostname_, const char* config_file_) {
             hostname = hostname_;
             config_file = config_file_;
 
-            thread = boost::thread(boost::bind(&Boardcaster_Impl_TCP::ioThread, this));
+            thread = boost::thread(boost::bind(&Broadcaster_Impl_TCP::ioThread, this));
         }
 
         void connectUpstream() {
@@ -178,7 +189,7 @@ namespace {
             tcp::resolver::query query(ip, boost::to_string(port));
             tcp::resolver::iterator iterator = resolver.resolve(query);
             boost::asio::async_connect(*upstream, iterator,
-                boost::bind(&Boardcaster_Impl_TCP::handleUpstreamConnect, this,
+                boost::bind(&Broadcaster_Impl_TCP::handleUpstreamConnect, this,
                 boost::asio::placeholders::error)
             );
         }
@@ -194,7 +205,7 @@ namespace {
         void readUpstreamMessage() {
             boost::asio::async_read(*upstream,
                 boost::asio::buffer(&message_header, sizeof(MessageHeader)),
-                boost::bind(&Boardcaster_Impl_TCP::handleReadHeader, this,
+                boost::bind(&Broadcaster_Impl_TCP::handleReadHeader, this,
                     boost::asio::placeholders::error
                 )
             );
@@ -209,7 +220,7 @@ namespace {
             memcpy(&message_data[0], &message_header, sizeof(MessageHeader));
             boost::asio::async_read(*upstream,
                 boost::asio::buffer(&message_data[sizeof(MessageHeader)], message_header.length),
-                boost::bind(&Boardcaster_Impl_TCP::handleReadData, this,
+                boost::bind(&Broadcaster_Impl_TCP::handleReadData, this,
                     boost::asio::placeholders::error
                 )
             );
@@ -240,6 +251,12 @@ namespace {
             //     (*it)->sendMessage(header, data, length);
             // }
         }
+        virtual void sendBroadcast(const void* data, size_t length) {
+            if(udp_broadcast_socket) {
+                udp::endpoint senderEndpoint(boost::asio::ip::address::from_string(config.udp_broadcast), config.udp_broadcast_port);
+                udp_broadcast_socket->send_to(boost::asio::buffer(data, length), senderEndpoint);
+            }
+        }
 
         virtual void relayMessage(const data_ptr& data) {
             for(set<Connection::pointer>::iterator it = connections.begin(); it != connections.end(); it++) {
@@ -258,7 +275,7 @@ namespace {
         void startAccept() {
             Connection::pointer new_connection = Connection::create(*io_service, this);
             acceptor->async_accept(new_connection->socket,
-                boost::bind(&Boardcaster_Impl_TCP::handleAccept, this, new_connection,
+                boost::bind(&Broadcaster_Impl_TCP::handleAccept, this, new_connection,
                   boost::asio::placeholders::error));
         }
 
@@ -270,7 +287,7 @@ namespace {
             }
         }
 
-        virtual ~Boardcaster_Impl_TCP() {
+        virtual ~Broadcaster_Impl_TCP() {
             io_service->stop();
             thread.join();
             acceptor.reset();
@@ -294,7 +311,35 @@ namespace {
             }
             connectUpstream();
 
+            if(!config.udp_broadcast.empty()) {
+                udp_broadcast_socket.reset(new udp::socket(*io_service));
+                udp_broadcast_socket->open(udp::v4());
+                udp_broadcast_socket->set_option(udp::socket::reuse_address(true));
+                udp_broadcast_socket->set_option(boost::asio::socket_base::broadcast(true));
+            }
+            if(!config.udp_listen.empty()) {
+                udp_listen_socket.reset(new udp::socket(*io_service));
+                udp_listen_socket->open(udp::v4());
+                udp_listen_socket->bind(udp::endpoint(boost::asio::ip::address::from_string(config.udp_listen), config.udp_listen_port));
+                udp_listen_buffer.resize(65536);
+                startUDPReceive();
+            }
+
             io_service->run();
+        }
+
+        void startUDPReceive() {
+            udp_listen_socket->async_receive(
+                boost::asio::buffer(udp_listen_buffer),
+                boost::bind(&Broadcaster_Impl_TCP::handleUDPReceive, this,
+                    boost::asio::placeholders::error,
+                    boost::asio::placeholders::bytes_transferred)
+            );
+        }
+
+        void handleUDPReceive(const boost::system::error_code& error, std::size_t size) {
+            if(delegate) delegate->onBroadcast(&udp_listen_buffer[0], size);
+            startUDPReceive();
         }
 
         Config config;
@@ -305,6 +350,11 @@ namespace {
         boost::shared_ptr<tcp::acceptor> acceptor;
         set<Connection::pointer> connections;
         boost::shared_ptr<tcp::socket> upstream;
+        boost::shared_ptr<udp::socket> udp_broadcast_socket;
+        boost::shared_ptr<udp::socket> udp_listen_socket;
+        vector<unsigned char> udp_listen_buffer;
+        udp::endpoint udp_listen_remote_endpoint;
+
         MessageHeader message_header;
         vector<unsigned char> message_data;
 
@@ -315,6 +365,6 @@ namespace {
     };
 }
 
-Boardcaster* Boardcaster::CreateTCP(const char* hostname, const char* config_file) {
-    return new Boardcaster_Impl_TCP(hostname, config_file);
+Broadcaster* Broadcaster::CreateTCP(const char* hostname, const char* config_file) {
+    return new Broadcaster_Impl_TCP(hostname, config_file);
 }

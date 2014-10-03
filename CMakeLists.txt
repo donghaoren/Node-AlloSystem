@@ -91,12 +91,12 @@ INCLUDE_DIRECTORIES (
   )
 
 #----------------------------------------------------------------------------------------------------------------------
-# Boardcaster Library
-  ADD_LIBRARY ( node-boardcaster SHARED
-    src/boardcaster.cpp
+# Broadcaster Library
+  ADD_LIBRARY ( node-broadcaster SHARED
+    src/broadcaster.cpp
   )
 
-  TARGET_LINK_LIBRARIES ( node-boardcaster
+  TARGET_LINK_LIBRARIES ( node-broadcaster
     LINK_PRIVATE
       ${Boost_LIBRARIES}
       pthread
@@ -129,7 +129,7 @@ INCLUDE_DIRECTORIES (
   INSTALL (
     FILES
       include/allosphere.h
-      include/boardcaster.h
+      include/broadcaster.h
       include/common.h
       include/graphics.h
       include/stream.h
@@ -147,7 +147,7 @@ INCLUDE_DIRECTORIES (
     TARGETS
       node-allosphere
       node-graphics
-      node-boardcaster
+      node-broadcaster
     RUNTIME DESTINATION bin
     LIBRARY DESTINATION lib
     ARCHIVE DESTINATION lib
