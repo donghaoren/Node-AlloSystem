@@ -207,10 +207,11 @@ namespace graphics {
         virtual int width() const = 0;
         virtual int height() const = 0;
 
-        virtual int frameCount() = 0;
-        virtual void seek(int frame_index) = 0;
         virtual bool nextFrame() = 0;
+
+        virtual void seek(double time) = 0;
         virtual double fps() = 0;
+        virtual double duration() = 0;
 
         virtual const void* pixels() const = 0;
 

@@ -107,7 +107,7 @@ namespace {
                 throw std::invalid_argument("could not find stream information");
             }
 
-            av_dump_format(mFormatContext, 0, "VideoSurface2D_ffmpeg(ByteStream*)", 0);
+            // av_dump_format(mFormatContext, 0, "VideoSurface2D_ffmpeg(ByteStream*)", 0);
 
             mVideoStream = -1;
             for(int i = 0; i < mFormatContext->nb_streams; i++) {
@@ -152,54 +152,14 @@ namespace {
                 NULL, NULL, NULL
             );
 
+            mTimeBase = (int64_t(mCodecContext->time_base.num) * AV_TIME_BASE) / int64_t(mCodecContext->time_base.den);
+            mFPS = (double)mFormatContext->streams[mVideoStream]->r_frame_rate.num / (double)mFormatContext->streams[mVideoStream]->r_frame_rate.den;
+            mDuration = (double)mFormatContext->duration / (double)AV_TIME_BASE;
+
             // Assign appropriate parts of buffer to image planes in pFrameRGB
             // Note that pFrameRGB is an AVFrame, but AVFrame is a superset of AVPicture
             avpicture_fill((AVPicture*)mFrameRGB, mBuffer, PIX_FMT_RGBA, mCodecContext->width, mCodecContext->height);
 
-//   while(av_read_frame(pFormatCtx, &packet)>=0) {
-//     // Is this a packet from the video stream?
-//     if(packet.stream_index==videoStream) {
-//       // Decode video frame
-//       avcodec_decode_video2(pCodecCtx, pFrame, &frameFinished,
-//                &packet);
-
-//       // Did we get a video frame?
-//       if(frameFinished) {
-//     // Convert the image from its native format to RGB
-//         sws_scale
-//         (
-//             sws_ctx,
-//             (uint8_t const * const *)pFrame->data,
-//             pFrame->linesize,
-//             0,
-//             pCodecCtx->height,
-//             pFrameRGB->data,
-//             pFrameRGB->linesize
-//         );
-
-//     // Save the frame to disk
-//     if(++i<=5)
-//       SaveFrame(pFrameRGB, pCodecCtx->width, pCodecCtx->height,
-//             i);
-//       }
-//     }
-
-//     // Free the packet that was allocated by av_read_frame
-//     av_free_packet(&packet);
-//   }
-
-//   // Free the RGB image
-//   av_free(buffer);
-//   av_free(pFrameRGB);
-
-//   // Free the YUV frame
-//   av_free(pFrame);
-
-//   // Close the codec
-//   avcodec_close(pCodecCtx);
-
-//   // Close the video file
-//   avformat_close_input(&pFormatCtx);
         }
 
         void _cleanup() {
@@ -220,12 +180,9 @@ namespace {
             return mCodecContext->height;
         }
 
-        virtual int frameCount() {
-            return 0;
-        }
-
-        virtual void seek(int frame_index) {
-
+        virtual void seek(double time) {
+            av_seek_frame(mFormatContext, -1, int64_t(time * AV_TIME_BASE), AVSEEK_FLAG_ANY);
+            avcodec_flush_buffers(mCodecContext);
         }
 
         virtual bool nextFrame() {
@@ -251,7 +208,11 @@ namespace {
         }
 
         virtual double fps() {
-            return 0;
+            return mFPS;
+        }
+
+        virtual double duration() {
+            return mDuration;
         }
 
         virtual const void* pixels() const {
@@ -271,6 +232,9 @@ namespace {
         int             frameFinished;
         int             mNumBytes;
         uint8_t         *mBuffer;
+        int64_t         mTimeBase;
+        double          mFPS;
+        double          mDuration;
         struct SwsContext *sws_ctx;
     };
 

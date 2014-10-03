@@ -5,8 +5,9 @@ var GL = allosphere.OpenGL;
 allosphere.initialize();
 
 function EquirectangularVideoTexture(filename, mode) {
-    if(!mode) mode = "left-right";
+    if(!mode) mode = "mono";
     this.video = new graphics.VideoSurface2D(filename);
+    console.log(this.video.fps(), this.video.duration());
     this.mode = mode;
     if(this.mode == "mono") {
         var texture = allosphere.textureCreate();
@@ -20,9 +21,9 @@ function EquirectangularVideoTexture(filename, mode) {
 }
 
 EquirectangularVideoTexture.prototype.nextFrame = function() {
-    this.video.nextFrame();
+    var r = this.video.nextFrame();
+    if(!r) return false;
     if(this.mode == "mono") {
-        console.log("upload.", this.video.width(), this.video.height());
         allosphere.textureBind(this.textures[0], 0);
         allosphere.textureSubmit(this.video.width(), this.video.height(), this.video.pixels());
     }
@@ -41,6 +42,7 @@ EquirectangularVideoTexture.prototype.nextFrame = function() {
         allosphere.textureSubmit(this.video.width() / 2, this.video.height(), this.video.pixels().slice(this.video.width() / 2 * 4));
         GL.pixelStorei(GL.UNPACK_ROW_LENGTH, 0);
     }
+    return true;
 };
 
 function EquirectangularRenderer(allosphere) {
@@ -111,11 +113,27 @@ EquirectangularRenderer.prototype.render = function(textures, info) {
     allosphere.shaderEnd(this.shader_id);
 };
 
-var video = new EquirectangularVideoTexture("a.mp4");
+var video = new EquirectangularVideoTexture("/Users/donghao/Downloads/set3_AbsDivV_volume_rendering.mp4");
+
+var t_start = new Date().getTime();
+var t_end;
+var frames = 0;
 
 function go() {
-    video.nextFrame();
-    setTimeout(go, 1);
+    var t0 = new Date().getTime();
+    if(!video.nextFrame()) {
+        t_end = t0;
+        console.log(t_end - t_start, frames / (t_end - t_start));
+        video.video.seek(0);
+        t_start = new Date().getTime();
+        frames = 0;
+    }
+    var t1 = new Date().getTime();
+    allosphere.tick();
+    frames += 1;
+    var t2 = new Date().getTime();
+    //console.log(t1 - t0, t2 - t1, t2 - t0);
+    setImmediate(go);
 }
 go();
 
@@ -141,7 +159,7 @@ allosphere.onDraw(function(info) {
     //GL.popMatrix();
 });
 
-// Main event loop for alloutil.
-setInterval(function() {
-    allosphere.tick();
-}, 10);
+// // Main event loop for alloutil.
+// setInterval(function() {
+//     allosphere.tick();
+// }, 10);

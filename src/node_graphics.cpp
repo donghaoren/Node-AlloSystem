@@ -149,6 +149,10 @@ void NODE_VideoSurface2D::Init(Handle<Object> exports) {
     tpl->PrototypeTemplate()->Set(
         String::NewSymbol("height"), FunctionTemplate::New(NODE_height)->GetFunction());
     tpl->PrototypeTemplate()->Set(
+        String::NewSymbol("fps"), FunctionTemplate::New(NODE_fps)->GetFunction());
+    tpl->PrototypeTemplate()->Set(
+        String::NewSymbol("duration"), FunctionTemplate::New(NODE_duration)->GetFunction());
+    tpl->PrototypeTemplate()->Set(
         String::NewSymbol("pixels"), FunctionTemplate::New(NODE_pixels)->GetFunction());
     tpl->PrototypeTemplate()->Set(
         String::NewSymbol("nextFrame"), FunctionTemplate::New(NODE_nextFrame)->GetFunction());
@@ -197,6 +201,16 @@ v8::Handle<v8::Value> NODE_VideoSurface2D::NODE_height(const v8::Arguments& args
     return Uint32::New(obj->video->height());
 }
 
+v8::Handle<v8::Value> NODE_VideoSurface2D::NODE_fps(const v8::Arguments& args) {
+    NODE_VideoSurface2D* obj = ObjectWrap::Unwrap<NODE_VideoSurface2D>(args.This());
+    return Number::New(obj->video->fps());
+}
+
+v8::Handle<v8::Value> NODE_VideoSurface2D::NODE_duration(const v8::Arguments& args) {
+    NODE_VideoSurface2D* obj = ObjectWrap::Unwrap<NODE_VideoSurface2D>(args.This());
+    return Number::New(obj->video->duration());
+}
+
 v8::Handle<v8::Value> NODE_VideoSurface2D::NODE_pixels(const v8::Arguments& args) {
     NODE_VideoSurface2D* obj = ObjectWrap::Unwrap<NODE_VideoSurface2D>(args.This());
     return node::Buffer::New((char*)obj->video->pixels(), obj->video->width() * obj->video->height() * 4, do_nothing_callback2, NULL)->handle_;
@@ -204,12 +218,13 @@ v8::Handle<v8::Value> NODE_VideoSurface2D::NODE_pixels(const v8::Arguments& args
 
 v8::Handle<v8::Value> NODE_VideoSurface2D::NODE_nextFrame(const v8::Arguments& args) {
     NODE_VideoSurface2D* obj = ObjectWrap::Unwrap<NODE_VideoSurface2D>(args.This());
-    obj->video->nextFrame();
-    return args.This();
+    return Boolean::New(obj->video->nextFrame());
 }
 
 v8::Handle<v8::Value> NODE_VideoSurface2D::NODE_seek(const v8::Arguments& args) {
-    // TODO...
+    NODE_VideoSurface2D* obj = ObjectWrap::Unwrap<NODE_VideoSurface2D>(args.This());
+    obj->video->seek(args[0]->NumberValue());
+    return args.This();
 }
 
 void NODE_GraphicalContext2D::Init(Handle<Object> exports) {

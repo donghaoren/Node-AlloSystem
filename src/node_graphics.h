@@ -50,6 +50,8 @@ private:
 
     static v8::Handle<v8::Value> NODE_width(const v8::Arguments& args);
     static v8::Handle<v8::Value> NODE_height(const v8::Arguments& args);
+    static v8::Handle<v8::Value> NODE_fps(const v8::Arguments& args);
+    static v8::Handle<v8::Value> NODE_duration(const v8::Arguments& args);
     static v8::Handle<v8::Value> NODE_nextFrame(const v8::Arguments& args);
     static v8::Handle<v8::Value> NODE_seek(const v8::Arguments& args);
     static v8::Handle<v8::Value> NODE_pixels(const v8::Arguments& args);
