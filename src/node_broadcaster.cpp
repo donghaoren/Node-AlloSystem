@@ -162,9 +162,15 @@ Handle<Value> EXPORT_sendBroadcast(const Arguments& args) {
     return Undefined();
 }
 
+Handle<Value> EXPORT_getTime(const Arguments& args) {
+    double t = broadcaster->getTime();
+    return Number::New(t);
+}
+
 void NODE_init(Handle<Object> exports) {
     exports->Set(String::NewSymbol("start"), FunctionTemplate::New(EXPORT_start)->GetFunction());
     exports->Set(String::NewSymbol("stop"), FunctionTemplate::New(EXPORT_stop)->GetFunction());
+    exports->Set(String::NewSymbol("getTime"), FunctionTemplate::New(EXPORT_getTime)->GetFunction());
     exports->Set(String::NewSymbol("onMessage"), FunctionTemplate::New(EXPORT_onMessage)->GetFunction());
     exports->Set(String::NewSymbol("onBroadcast"), FunctionTemplate::New(EXPORT_onBroadcast)->GetFunction());
     exports->Set(String::NewSymbol("sendMessage"), FunctionTemplate::New(EXPORT_sendMessage)->GetFunction());

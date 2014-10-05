@@ -17,6 +17,8 @@ public:
     virtual void sendMessage(const void* data, size_t length) = 0;
     virtual void sendBroadcast(const void* data, size_t length) = 0;
 
+    virtual double getTime() = 0;
+
     virtual ~Broadcaster() { }
 
     // Create with a configuration file.

@@ -19,6 +19,12 @@ using boost::asio::ip::udp;
 
 namespace {
 
+    double get_precise_time() {
+        static boost::posix_time::ptime epoch(boost::gregorian::date(1970, 1, 1));
+        double t = (boost::posix_time::microsec_clock::local_time() - epoch).total_microseconds() / 1000000.0;
+        return t;
+    }
+
     struct Host {
         string ip;
         int port;
@@ -33,6 +39,38 @@ namespace {
         Host() { }
         Host(const string& ip_, int port_, bool isRoot_, const string& upstream_ = "")
         : ip(ip_), port(port_), isRoot(isRoot_), upstream(upstream_) { }
+    };
+
+    struct RunningAverage {
+        int count;
+        double sum;
+        deque<double> values;
+
+        RunningAverage(int count_) {
+            count = count_;
+            sum = 0;
+        }
+
+        double get() const {
+            if(values.empty()) return 0;
+            return sum / values.size();
+        }
+
+        void feed(double val) {
+            values.push_back(val);
+            sum += val;
+            if(values.size() > count) {
+                sum -= values.front();
+                values.pop_front();
+            }
+        }
+    };
+
+    struct PROTOCOL_UDPTimeSync {
+        static const unsigned int MAGIC = 0xFC307D2E;
+
+        unsigned int magic;
+        double time_sent;
     };
 
     struct Config {
@@ -166,7 +204,7 @@ namespace {
             Broadcaster_Impl_TCP* broadcaster;
         };
 
-        Broadcaster_Impl_TCP(const char* hostname_, const char* config_file_) {
+        Broadcaster_Impl_TCP(const char* hostname_, const char* config_file_) : time_difference(10) {
             hostname = hostname_;
             config_file = config_file_;
 
@@ -338,9 +376,30 @@ namespace {
         }
 
         void handleUDPReceive(const boost::system::error_code& error, std::size_t size) {
-            if(delegate) delegate->onBroadcast(&udp_listen_buffer[0], size);
+            if(delegate) {
+                delegate->onBroadcast(&udp_listen_buffer[0], size);
+                if(size == sizeof(PROTOCOL_UDPTimeSync)) {
+                    PROTOCOL_UDPTimeSync* packet = (PROTOCOL_UDPTimeSync*)&udp_listen_buffer[0];
+                    if(packet->magic == PROTOCOL_UDPTimeSync::MAGIC) {
+                        time_difference.feed(packet->time_sent - get_precise_time());
+                    }
+                }
+            }
             startUDPReceive();
         }
+
+        void performTimeSync() {
+            PROTOCOL_UDPTimeSync packet;
+            packet.magic = PROTOCOL_UDPTimeSync::MAGIC;
+            packet.time_sent = get_precise_time();
+            sendBroadcast(&packet, sizeof(PROTOCOL_UDPTimeSync));
+        }
+
+        virtual double getTime() {
+            return get_precise_time() + time_difference.get();
+        }
+
+        RunningAverage time_difference;
 
         Config config;
 
@@ -354,6 +413,8 @@ namespace {
         boost::shared_ptr<udp::socket> udp_listen_socket;
         vector<unsigned char> udp_listen_buffer;
         udp::endpoint udp_listen_remote_endpoint;
+
+        //boost::asio::deadline_timer performTimeSync_timer;
 
         MessageHeader message_header;
         vector<unsigned char> message_data;
