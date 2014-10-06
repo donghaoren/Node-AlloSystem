@@ -154,7 +154,7 @@ namespace {
                 mCodecContext->pix_fmt,
                 mCodecContext->width,
                 mCodecContext->height,
-                PIX_FMT_RGBA, SWS_BILINEAR,
+                PIX_FMT_RGBA, SWS_FAST_BILINEAR,
                 NULL, NULL, NULL
             );
 
