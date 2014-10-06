@@ -218,6 +218,7 @@ namespace graphics {
         virtual ~VideoSurface2D() { }
 
         static VideoSurface2D* FromStream(ByteStream* stream);
+        static VideoSurface2D* FromFile(const char* path);
 
     };
 

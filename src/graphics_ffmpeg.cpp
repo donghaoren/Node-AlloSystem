@@ -85,7 +85,7 @@ namespace {
     class VideoSurface2D_ffmpeg : public VideoSurface2D {
     public:
 
-        VideoSurface2D_ffmpeg(ByteStream* stream) {
+        VideoSurface2D_ffmpeg(const char* path) {
             std::string error_info;
 
             ffmpeg_initialize();
@@ -98,17 +98,15 @@ namespace {
             mFrameRGB = NULL;
             mOptionsDict = NULL;
 
-            if(!stream) {
+            //mIOContext = new ByteStreamIOContext(stream);
+            //mFormatContext = avformat_alloc_context();
+            //mFormatContext->pb = mIOContext->get_avio();
+            //avformat_open_input(&mFormatContext, "dummy", nullptr, nullptr);
+
+            if(avformat_open_input(&mFormatContext, path, NULL, NULL) != 0) {
                 _cleanup();
-                throw std::invalid_argument("invalid input stream");
+                throw std::invalid_argument("could not open input file");
             }
-
-            mIOContext = new ByteStreamIOContext(stream);
-
-            mFormatContext = avformat_alloc_context();
-            mFormatContext->pb = mIOContext->get_avio();
-
-            avformat_open_input(&mFormatContext, "dummy", nullptr, nullptr);
 
             if(avformat_find_stream_info(mFormatContext, NULL) < 0) {
                 _cleanup();
@@ -248,8 +246,8 @@ namespace {
 
 }
 
-VideoSurface2D* VideoSurface2D::FromStream(ByteStream* stream) {
-    return new VideoSurface2D_ffmpeg(stream);
+VideoSurface2D* VideoSurface2D::FromFile(const char* path) {
+    return new VideoSurface2D_ffmpeg(path);
 }
 
 } }

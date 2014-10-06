@@ -166,8 +166,7 @@ void NODE_VideoSurface2D::Init(Handle<Object> exports) {
 }
 
 NODE_VideoSurface2D::NODE_VideoSurface2D(const char* filename) {
-    stream = iv::ByteStream::OpenFile(filename, "r");
-    video = iv::graphics::VideoSurface2D::FromStream(stream);
+    video = iv::graphics::VideoSurface2D::FromFile(filename);
 }
 
 NODE_VideoSurface2D::~NODE_VideoSurface2D() {
