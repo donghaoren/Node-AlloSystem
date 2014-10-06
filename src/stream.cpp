@@ -17,7 +17,7 @@ namespace {
     public:
         FileStream(const std::string& path, const std::string& mode) {
             fp = fopen(path.c_str(), mode.c_str());
-            // if(!fp) throw io_error();
+            //if(!fp) throw std::invalid_argument("couldn't open file");
             if(mode == "a" || mode == "w") writable = true;
             else writable = false;
         }
@@ -46,7 +46,7 @@ namespace {
         virtual bool canSeek() { return true; }
 
         virtual ~FileStream() {
-            fclose(fp);
+            if(fp) fclose(fp);
         }
 
         FILE* fp;
@@ -55,7 +55,12 @@ namespace {
 }
 
 ByteStream* ByteStream::OpenFile(const char* path, const char* mode) {
-    return new FileStream(path, mode);
+    FileStream* f = new FileStream(path, mode);
+    if(!f->fp) {
+        delete f;
+        return NULL;
+    }
+    return f;
 }
 
 // std::string get_file_contents(const std::string& filename) {

@@ -69,7 +69,7 @@ namespace {
             if(whence == AVSEEK_SIZE) {
                 return h->stream->position();
             }
-
+            return -1;
         }
 
         AVIOContext *get_avio() { return ctx; }
@@ -97,6 +97,11 @@ namespace {
             mFrame = NULL;
             mFrameRGB = NULL;
             mOptionsDict = NULL;
+
+            if(!stream) {
+                _cleanup();
+                throw std::invalid_argument("invalid input stream");
+            }
 
             mIOContext = new ByteStreamIOContext(stream);
 
@@ -244,11 +249,7 @@ namespace {
 }
 
 VideoSurface2D* VideoSurface2D::FromStream(ByteStream* stream) {
-    try {
-        return new VideoSurface2D_ffmpeg(stream);
-    } catch(std::exception& e) {
-        std::cout << "Error: " << e.what() << std::endl;
-    }
+    return new VideoSurface2D_ffmpeg(stream);
 }
 
 } }
