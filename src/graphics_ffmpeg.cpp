@@ -36,7 +36,7 @@ namespace {
     public:
         ByteStreamIOContext(ByteStream* stream_)
           : stream(stream_),
-            buffer_size(1024 * 256),
+            buffer_size(1024 * 1024),
             buffer(static_cast<unsigned char*>(av_malloc(buffer_size)))
         {
             ctx = avio_alloc_context(buffer, buffer_size, 0, this, &ByteStreamIOContext::read, NULL, &ByteStreamIOContext::seek);

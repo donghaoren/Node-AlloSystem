@@ -113,25 +113,40 @@ EquirectangularRenderer.prototype.render = function(textures, info) {
     allosphere.shaderEnd(this.shader_id);
 };
 
-var video = new EquirectangularVideoTexture("/Users/donghao/Downloads/set3_AbsDivV_volume_rendering.mp4");
+//var video_path = "/home/sphere/donghao/panoramas/video_d7e1f955d2bbcc437a0e923e9d05b287.mp4";
+var video_path = "/home/sphere/donghao/panoramas/3DH-Take1-Side-By-Side-4000x2000.mp4";
+var video_mode = "mono";
+
+if(process.argv[2]) video_path = process.argv[2];
+if(process.argv[3]) video_mode = process.argv[3];
+
+var video = new EquirectangularVideoTexture(video_path, video_mode);
+//set3_AbsDivV_volume_rendering.mp4
 
 var t_start = new Date().getTime();
 var t_end;
 var frames = 0;
 
+var t_decode = 0;
+var t_render = 0;
+
 function go() {
     var t0 = new Date().getTime();
     if(!video.nextFrame()) {
         t_end = t0;
-        console.log(t_end - t_start, frames / (t_end - t_start));
-        video.video.seek(0);
+        console.log(frames, t_end - t_start, 1000 * frames / (t_end - t_start), t_decode / frames, t_render / frames);
+        video = new EquirectangularVideoTexture(video_path, video_mode);
         t_start = new Date().getTime();
         frames = 0;
+        t_decode = 0;
+        t_render = 0;
     }
     var t1 = new Date().getTime();
     allosphere.tick();
     frames += 1;
     var t2 = new Date().getTime();
+    t_decode += t1 - t0;
+    t_render += t2 - t1;
     //console.log(t1 - t0, t2 - t1, t2 - t0);
     setImmediate(go);
 }
