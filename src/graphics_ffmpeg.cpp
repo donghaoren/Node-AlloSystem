@@ -66,6 +66,9 @@ namespace {
                 h->stream->seek(ByteStream::END, offset);
                 return h->stream->position();
             }
+            if(whence == AVSEEK_SIZE) {
+                return h->stream->position();
+            }
 
         }
 
