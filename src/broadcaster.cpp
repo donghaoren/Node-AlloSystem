@@ -90,7 +90,7 @@ namespace {
 
         void read(const char* file) {
             std::ifstream stream(file);
-            if(!stream) throw std::invalid_argument("Error reading configuration file: not found.");
+            if(!stream) throw invalid_argument("Error reading configuration file: not found.");
 
             std::string line;
             while(std::getline(stream, line)) {
@@ -127,7 +127,7 @@ namespace {
                     udp_listen = args[1];
                     udp_listen_port = atoi(args[2].c_str());
                 } else {
-                    throw std::invalid_argument("Error reading configuration file: invalid command '" + args[0] + "'.");
+                    throw invalid_argument("Error reading configuration file: invalid command '" + args[0] + "'.");
                 }
             }
         }

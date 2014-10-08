@@ -65,25 +65,31 @@ v8::Handle<v8::Value> NODE_Surface2D::New(const v8::Arguments& args) {
     HandleScope scope;
 
     if(args.IsConstructCall()) {
-        // Invoked as constructor: `new MyObject(...)`
-        if(node::Buffer::HasInstance(args[0])) {
-            // Constructing with a buffer object.
-            NODE_Surface2D* obj = new NODE_Surface2D(node::Buffer::Data(args[0]), node::Buffer::Length(args[0]));
-            obj->Wrap(args.This());
-            return args.This();
-        } else {
-            int width = args[0]->IsUndefined() ? 0 : args[0]->IntegerValue();
-            int height = args[1]->IsUndefined() ? 0 : args[1]->IntegerValue();
-            if(node::Buffer::HasInstance(args[2])) {
-                NODE_Surface2D* obj = new NODE_Surface2D(width, height, node::Buffer::Data(args[2]));
+        try {
+            // Invoked as constructor: `new MyObject(...)`
+            if(node::Buffer::HasInstance(args[0])) {
+                // Constructing with a buffer object.
+                NODE_Surface2D* obj = new NODE_Surface2D(node::Buffer::Data(args[0]), node::Buffer::Length(args[0]));
                 obj->Wrap(args.This());
                 return args.This();
             } else {
-                int type = args[2]->IsUndefined() ? SURFACETYPE_RASTER : args[2]->IntegerValue();
-                NODE_Surface2D* obj = new NODE_Surface2D(width, height, type);
-                obj->Wrap(args.This());
-                return args.This();
+                int width = args[0]->IsUndefined() ? 0 : args[0]->IntegerValue();
+                int height = args[1]->IsUndefined() ? 0 : args[1]->IntegerValue();
+                if(node::Buffer::HasInstance(args[2])) {
+                    NODE_Surface2D* obj = new NODE_Surface2D(width, height, node::Buffer::Data(args[2]));
+                    obj->Wrap(args.This());
+                    return args.This();
+                } else {
+                    int type = args[2]->IsUndefined() ? SURFACETYPE_RASTER : args[2]->IntegerValue();
+                    NODE_Surface2D* obj = new NODE_Surface2D(width, height, type);
+                    obj->Wrap(args.This());
+                    return args.This();
+                }
             }
+        } catch(const iv::exception& e) {
+            return ThrowException(String::New(e.what()));
+        } catch(...) {
+            return ThrowException(String::New("unknown exception"));
         }
     } else {
         // Invoked as plain function `MyObject(...)`, turn into construct call.
@@ -171,7 +177,6 @@ NODE_VideoSurface2D::NODE_VideoSurface2D(const char* filename) {
 
 NODE_VideoSurface2D::~NODE_VideoSurface2D() {
     delete video;
-    if(stream) delete stream;
 }
 
 v8::Handle<v8::Value> NODE_VideoSurface2D::New(const v8::Arguments& args) {
@@ -179,9 +184,15 @@ v8::Handle<v8::Value> NODE_VideoSurface2D::New(const v8::Arguments& args) {
 
     if(args.IsConstructCall()) {
         String::Utf8Value str(args[0]);
-        NODE_VideoSurface2D* obj = new NODE_VideoSurface2D(std::string(*str, *str + str.length()).c_str());
-        obj->Wrap(args.This());
-        return args.This();
+        try {
+            NODE_VideoSurface2D* obj = new NODE_VideoSurface2D(std::string(*str, *str + str.length()).c_str());
+            obj->Wrap(args.This());
+            return args.This();
+        } catch(const iv::exception& e) {
+            return ThrowException(String::New(e.what()));
+        } catch(...) {
+            return ThrowException(String::New("unknown exception"));
+        }
     } else {
         // Invoked as plain function `MyObject(...)`, turn into construct call.
         const int argc = 2;

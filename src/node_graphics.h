@@ -40,7 +40,6 @@ public:
     static void Init(v8::Handle<v8::Object> exports);
 
     iv::graphics::VideoSurface2D* video;
-    iv::ByteStream* stream;
 
 private:
     explicit NODE_VideoSurface2D(const char* filename);

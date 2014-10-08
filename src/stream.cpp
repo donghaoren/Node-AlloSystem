@@ -17,7 +17,7 @@ namespace {
     public:
         FileStream(const std::string& path, const std::string& mode) {
             fp = fopen(path.c_str(), mode.c_str());
-            //if(!fp) throw std::invalid_argument("couldn't open file");
+            //if(!fp) throw invalid_argument("couldn't open file");
             if(mode == "a" || mode == "w") writable = true;
             else writable = false;
         }
@@ -61,6 +61,31 @@ ByteStream* ByteStream::OpenFile(const char* path, const char* mode) {
         return NULL;
     }
     return f;
+}
+
+exception::exception(const char* what_) {
+    if(!what_) what_ = "unknown exception";
+    size_t len = strlen(what_);
+    description = new char[len + 1];
+    strcpy(description, what_);
+}
+const char* exception::what() const {
+    return description;
+}
+exception::exception(const exception& e) {
+    size_t len = strlen(e.description);
+    description = new char[len + 1];
+    strcpy(description, e.description);
+}
+exception& exception::operator = (const exception& e) {
+    delete [] description;
+    size_t len = strlen(e.description);
+    description = new char[len + 1];
+    strcpy(description, e.description);
+    return *this;
+}
+exception::~exception() {
+    delete [] description;
 }
 
 // std::string get_file_contents(const std::string& filename) {

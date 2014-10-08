@@ -188,7 +188,7 @@ namespace {
                     paint.setStrokeCap(SkPaint::kSquare_Cap);
                 } break;
                 default: {
-                    throw std::invalid_argument("linecap");
+                    throw invalid_argument("linecap");
                 } break;
             }
         }
@@ -205,7 +205,7 @@ namespace {
                     paint.setStrokeJoin(SkPaint::kBevel_Join);
                 } break;
                 default: {
-                    throw std::invalid_argument("linejoin");
+                    throw invalid_argument("linejoin");
                 } break;
             }
 
@@ -228,7 +228,7 @@ namespace {
                     paint.setTextAlign(SkPaint::kRight_Align);
                 } break;
                 default: {
-                    throw std::invalid_argument("textalign");
+                    throw invalid_argument("textalign");
                 } break;
             }
         }
@@ -249,7 +249,7 @@ namespace {
                     sty = SkTypeface::kBoldItalic;
                 } break;
                 default: {
-                    throw std::invalid_argument("fontstyle");
+                    throw invalid_argument("fontstyle");
                 } break;
             }
             SkTypeface* typeface = SkTypeface::CreateFromName(name, sty);
@@ -298,7 +298,7 @@ namespace {
         Surface2D_Bitmap(int width, int height) {
             bool r = bitmap.allocPixels(SkImageInfo::Make(width, height, kRGBA_8888_SkColorType, kPremul_SkAlphaType));
             if(!r) {
-                throw std::invalid_argument("cannot create 2D bitmap.");
+                throw invalid_argument("cannot create 2D bitmap.");
             }
             texture = 0;
         }
@@ -306,7 +306,7 @@ namespace {
         Surface2D_Bitmap(int width, int height, void* buffer) {
             bool r = bitmap.installPixels(SkImageInfo::Make(width, height, kRGBA_8888_SkColorType, kPremul_SkAlphaType), buffer, width * 4);
             if(!r) {
-                throw std::invalid_argument("cannot create 2D bitmap.");
+                throw invalid_argument("cannot create 2D bitmap.");
             }
             texture = 0;
         }
@@ -386,7 +386,7 @@ namespace {
             SkImageInfo info = SkImageInfo::Make(width, height, kRGBA_8888_SkColorType, kPremul_SkAlphaType);
             surface = SkSurface::NewRaster(info);
             if(!surface) {
-                throw std::invalid_argument("cannot create 2D surface.");
+                throw invalid_argument("cannot create 2D surface.");
             }
             texture = 0;
         }
@@ -567,7 +567,7 @@ namespace {
                 Surface2D_Bitmap* surface = dynamic_cast<Surface2D_Bitmap*>(surface_);
                 canvas.drawBitmap(surface->bitmap, x, y, &paint);
             } else {
-                throw std::invalid_argument("drawSurface() can only take bitmaps.");
+                throw invalid_argument("drawSurface() can only take bitmaps.");
             }
         }
         virtual void drawSurface(Surface2D* surface_, const Rectangle2d& src, const Rectangle2d& dest, Paint2D* paint_) {
@@ -577,7 +577,7 @@ namespace {
                 SkRect sksrc = convert_rect(src);
                 canvas.drawBitmapRectToRect(surface->bitmap, &sksrc, convert_rect(dest), &paint);
             } else {
-                throw std::invalid_argument("drawSurface() can only take bitmaps.");
+                throw invalid_argument("drawSurface() can only take bitmaps.");
             }
         }
         // Rotate.
@@ -703,7 +703,7 @@ namespace {
                 GraphicalContext_Impl* r = new GraphicalContext_Impl(canvas);
                 return r;
             }
-            throw std::invalid_argument("surface");
+            throw invalid_argument("surface");
         }
 
         virtual Surface2D* createSurface2DFromImage(ByteStream* stream) {
@@ -722,7 +722,7 @@ namespace {
                 return surface;
             } else {
                 delete surface;
-                throw std::invalid_argument("failed to decode image.");
+                throw invalid_argument("failed to decode image.");
             }
         }
     };

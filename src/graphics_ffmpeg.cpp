@@ -93,10 +93,12 @@ namespace {
             mIOContext = NULL;
             mFormatContext = NULL;
             mCodecContext = NULL;
+            mCodecContextOpened = false;
             mCodec = NULL;
             mFrame = NULL;
             mFrameRGB = NULL;
             mOptionsDict = NULL;
+            mBuffer = NULL;
 
             //mIOContext = new ByteStreamIOContext(stream);
             //mFormatContext = avformat_alloc_context();
@@ -105,12 +107,12 @@ namespace {
 
             if(avformat_open_input(&mFormatContext, path, NULL, NULL) != 0) {
                 _cleanup();
-                throw std::invalid_argument("could not open input file");
+                throw invalid_argument("could not open input file");
             }
 
             if(avformat_find_stream_info(mFormatContext, NULL) < 0) {
                 _cleanup();
-                throw std::invalid_argument("could not find stream information");
+                throw invalid_argument("could not find stream information");
             }
 
             // av_dump_format(mFormatContext, 0, "VideoSurface2D_ffmpeg(ByteStream*)", 0);
@@ -125,7 +127,7 @@ namespace {
 
             if(mVideoStream == -1) {
                 _cleanup();
-                throw std::invalid_argument("could not find video stream");
+                throw invalid_argument("could not find video stream");
             }
 
             mCodecContext = mFormatContext->streams[mVideoStream]->codec;
@@ -134,13 +136,14 @@ namespace {
 
             if(mCodec == NULL) {
                 _cleanup();
-                throw std::invalid_argument("could not find video decoder");
+                throw invalid_argument("could not find video decoder");
             }
 
             if(avcodec_open2(mCodecContext, mCodec, &mOptionsDict) < 0) {
                 _cleanup();
-                throw std::invalid_argument("could not open codec");
+                throw invalid_argument("could not open codec");
             }
+            mCodecContextOpened = true;
 
             mFrame = av_frame_alloc();
             mFrameRGB = av_frame_alloc();
@@ -165,13 +168,15 @@ namespace {
             // Assign appropriate parts of buffer to image planes in pFrameRGB
             // Note that pFrameRGB is an AVFrame, but AVFrame is a superset of AVPicture
             avpicture_fill((AVPicture*)mFrameRGB, mBuffer, PIX_FMT_RGBA, mCodecContext->width, mCodecContext->height);
-
         }
 
         void _cleanup() {
-            if(mFormatContext) { av_free(mFormatContext); mFormatContext = NULL; }
+            if(mCodecContextOpened) avcodec_close(mCodecContext);
             if(mFrame) { av_free(mFrame); mFrame = NULL; }
+            if(mFrameRGB) { av_free(mFrameRGB); mFrameRGB = NULL; }
+            if(mFormatContext) { avformat_close_input(&mFormatContext); mFormatContext = NULL; }
             if(mIOContext) { delete mIOContext; mIOContext = NULL; }
+            if(mBuffer) { av_free(mBuffer); }
         }
 
         virtual ~VideoSurface2D_ffmpeg() {
@@ -229,6 +234,7 @@ namespace {
 
         AVFormatContext *mFormatContext;
         AVCodecContext  *mCodecContext;
+        bool             mCodecContextOpened;
         AVCodec         *mCodec;
         AVFrame         *mFrame;
         AVFrame         *mFrameRGB;

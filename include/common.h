@@ -3,16 +3,37 @@
 
 #include <string>
 #include <memory>
-#include <exception>
-#include <stdexcept>
 
 #define IVNS_BEGIN namespace iv {
 #define IVNS_END }
 
 IVNS_BEGIN
 
-class not_implemented_yet : public std::exception { };
-class not_supported : public std::exception { };
+class exception {
+public:
+    exception(const char* what_ = nullptr);
+    exception(const exception& e);
+    exception& operator = (const exception& e);
+    virtual const char* what() const;
+    virtual ~exception();
+private:
+    char* description;
+};
+
+class not_implemented_yet : public exception {
+public:
+    not_implemented_yet(const char* what_ = nullptr) : exception(what_) { }
+};
+
+class not_supported : public exception {
+public:
+    not_supported(const char* what_ = nullptr) : exception(what_) { }
+};
+
+class invalid_argument : public exception {
+public:
+    invalid_argument(const char* what_ = nullptr) : exception(what_) { }
+};
 
 IVNS_END
 
