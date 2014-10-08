@@ -1,5 +1,8 @@
 #include <stream.h>
 #include <cstdio>
+#include <cstring>
+
+using namespace std;
 
 IVNS_BEGIN
 
