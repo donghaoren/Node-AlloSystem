@@ -55,6 +55,18 @@ Dependencies
 Build
 ====
 
+Regenerate build files:
+
     make rebuild
+    
+Build:
+
+    make
+    
+Deploy:
+
     make deploy
         
+Run Scripts:
+
+    ./run tests/test.js
