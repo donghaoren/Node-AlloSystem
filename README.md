@@ -1,3 +1,17 @@
+Introduction
+====
+
+Experimental Nodejs bindings for the allosphere: https://github.com/AlloSphere-Research-Group/AlloSystem
+
+Features:
+
+- OmniStereo application framework.
+- OpenGL binding (adopted from https://github.com/paddybyers/node-gl)
+- Skia binding for 2D graphics.
+- FFmpeg binding for basic video playback.
+- IPC semaphores and shared memory.
+- TCP-based reliable message boardcasting and UDP-based boardcasting.
+
 Dependencies
 ====
 
