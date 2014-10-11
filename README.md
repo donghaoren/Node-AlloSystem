@@ -2,6 +2,7 @@ Dependencies
 ====
 
 1. AlloSystem libraries: allocore, alloutil
+
     In Linux, please compile with -fPIC, otherwise you'll get linking problems.
     Install the compiled headers and archives to one of the following locations:
       /usr/local
@@ -9,6 +10,7 @@ Dependencies
       /opt/allosystem
 
 2. Graphics library: Skia
+
     Get it from https://code.google.com/p/skia/
     Put it here: /opt/build/skia
     Checkout the commit: 7f8c54cefefb855bb0d85d09ce5282ba7e9e352a
@@ -25,6 +27,7 @@ Dependencies
         ninja -C out/Release
 
 3. Node.js:
+
     Have `node` and `node-gyp` in your PATH.
 
 Build
