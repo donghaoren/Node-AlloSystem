@@ -1,7 +1,9 @@
 Introduction
 ====
 
-Experimental Nodejs bindings for the allosphere: https://github.com/AlloSphere-Research-Group/AlloSystem
+Experimental Nodejs bindings for AlloSystem: https://github.com/AlloSphere-Research-Group/AlloSystem
+
+Mainly designed for integrating iVisDesigner (https://github.com/donghaoren/iVisDesigner) to the allosphere.
 
 Features:
 
