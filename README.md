@@ -55,15 +55,6 @@ Dependencies
 Build
 ====
 
-1. First build the native shared objects.
-
-        mkdir build_native
-        cd build_native
-        cmake .. -DCMAKE_INSTALL_PREFIX=../native
-        make install -j8
-        cd ..
-
-2. Build Nodejs bindings.
-
-        node-gyp configure
-        node-gyp build
+        make rebuild
+        make deploy
+        
