@@ -55,6 +55,6 @@ Dependencies
 Build
 ====
 
-        make rebuild
-        make deploy
+    make rebuild
+    make deploy
         
