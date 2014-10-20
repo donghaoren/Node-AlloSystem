@@ -1,0 +1,16 @@
+all: iv/AllosphereTexture.class iv_AllosphereTexture.h libIVAllosphereTexture.so Test.class
+
+iv/AllosphereTexture.class: iv/AllosphereTexture.java
+	javac iv/AllosphereTexture.java
+
+iv_AllosphereTexture.h: iv/AllosphereTexture.class
+	javah -classpath . -jni iv.AllosphereTexture
+
+libIVAllosphereTexture.so: iv_AllosphereTexture.cpp iv_AllosphereTexture.h
+	g++ iv_AllosphereTexture.cpp -o libIVAllosphereTexture.so -fpic -shared -lGL
+
+Test.class: Test.java
+	javac -classpath . Test.java
+
+clean:
+	rm *.class iv/*.class *.so iv_AllosphereTexture.h

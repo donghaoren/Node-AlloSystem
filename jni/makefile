@@ -1,16 +1,9 @@
-all: iv/AllosphereTexture.class iv_AllosphereTexture.h libIVAllosphereTexture.dylib Test.class
+UNAME_S = $(shell uname -s)
 
-iv/AllosphereTexture.class: iv/AllosphereTexture.java
-	javac iv/AllosphereTexture.java
+ifeq ($(UNAME_S),Linux)
+  include makefile.linux
+else
+  include makefile.darwin
+endif
 
-iv_AllosphereTexture.h: iv/AllosphereTexture.class
-	javah -jni iv.AllosphereTexture
 
-libIVAllosphereTexture.dylib: iv_AllosphereTexture.cpp iv_AllosphereTexture.h
-	g++ iv_AllosphereTexture.cpp -I"/System/Library/Frameworks/JavaVM.framework/Headers" -fpic -shared -framework OpenGL -o libIVAllosphereTexture.dylib
-
-Test.class: Test.java
-	javac -classpath . Test.java
-
-clean:
-	rm *.class iv/*.class *.so iv_AllosphereTexture.h libIVAllosphereTexture.dylib
