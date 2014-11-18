@@ -1,4 +1,4 @@
-all: iv/AllosphereTexture.class iv_AllosphereTexture.h libIVAllosphereTexture.dylib Test.class
+all: iv/AllosphereTexture.class iv_AllosphereTexture.h libIVAllosphereTexture.dylib iv/Test.class
 
 iv/AllosphereTexture.class: iv/AllosphereTexture.java
 	javac iv/AllosphereTexture.java
@@ -9,8 +9,8 @@ iv_AllosphereTexture.h: iv/AllosphereTexture.class
 libIVAllosphereTexture.dylib: iv_AllosphereTexture.cpp iv_AllosphereTexture.h
 	g++ iv_AllosphereTexture.cpp -I"/System/Library/Frameworks/JavaVM.framework/Headers" -fpic -shared -framework OpenGL -o libIVAllosphereTexture.dylib
 
-Test.class: Test.java
-	javac -classpath . Test.java
+iv/Test.class: iv/Test.java
+	javac -classpath $(CLASSPATH):. iv/Test.java
 
 clean:
 	rm *.class iv/*.class iv_AllosphereTexture.h libIVAllosphereTexture.dylib

@@ -199,13 +199,16 @@ namespace iv { namespace al {
             uniform float omni_near;
             uniform float omni_far;
             vec4 omni_render(in vec4 vertex) {
-                float l = length(vertex.xz);
+                float l = length(vertex.xyz);
                 vec3 vn = normalize(vertex.xyz);
+                // Precise formula.
                 float displacement = omni_eye *
                   (omni_radius * omni_radius -
                      sqrt(l * l * omni_radius * omni_radius +
                           omni_eye * omni_eye * (omni_radius * omni_radius - l * l))) /
                   (omni_radius * omni_radius - omni_eye * omni_eye);
+                // Approximation.
+                // float displacement = omni_eye * (1.0 - 1.0 / omni_radius);
 
                 // omni-stereo effect (in eyespace XZ plane)
                 // cross-product with up vector also ensures stereo fades out at Y

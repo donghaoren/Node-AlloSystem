@@ -69,6 +69,7 @@ public:
         metadata->timestamp = get_precise_time();
         glBindTexture(GL_TEXTURE_2D, texture_id);
         glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_UNSIGNED_BYTE, pixels);
+        fprintf(stderr, "upload: %d %d", texture_id, (int)pixels[0]);
         writeUnlock();
         return true;
     }
