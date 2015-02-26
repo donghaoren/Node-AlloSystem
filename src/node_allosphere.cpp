@@ -107,6 +107,18 @@ Handle<Value> EXPORT_shaderCreate(const Arguments& args) {
     return Integer::New(index);
 }
 
+Handle<Value> EXPORT_shaderCreateWithGeometry(const Arguments& args) {
+    String::Utf8Value vert(args[0]);
+    std::string vert_(*vert, *vert + vert.length());
+    String::Utf8Value frag(args[1]);
+    std::string frag_(*frag, *frag + frag.length());
+    String::Utf8Value geom(args[2]);
+    std::string geom_(*geom, *geom + geom.length());
+    int index = application->app->shaderCreate(vert_.c_str(), frag_.c_str(), geom_.c_str(),
+      args[3]->IntegerValue(), args[4]->IntegerValue(), args[5]->IntegerValue());
+    return Integer::New(index);
+}
+
 Handle<Value> EXPORT_shaderDelete(const Arguments& args) {
     application->app->shaderDelete(args[0]->IntegerValue());
     return Undefined();
@@ -192,6 +204,7 @@ void NODE_init(Handle<Object> exports) {
   exports->Set(String::NewSymbol("onFrame"), FunctionTemplate::New(EXPORT_onFrame)->GetFunction());
   exports->Set(String::NewSymbol("onDraw"), FunctionTemplate::New(EXPORT_onDraw)->GetFunction());
   exports->Set(String::NewSymbol("shaderCreate"), FunctionTemplate::New(EXPORT_shaderCreate)->GetFunction());
+  exports->Set(String::NewSymbol("shaderCreateWithGeometry"), FunctionTemplate::New(EXPORT_shaderCreateWithGeometry)->GetFunction());
   exports->Set(String::NewSymbol("shaderDelete"), FunctionTemplate::New(EXPORT_shaderDelete)->GetFunction());
   exports->Set(String::NewSymbol("shaderDefault"), FunctionTemplate::New(EXPORT_shaderDefault)->GetFunction());
   exports->Set(String::NewSymbol("shaderBegin"), FunctionTemplate::New(EXPORT_shaderBegin)->GetFunction());

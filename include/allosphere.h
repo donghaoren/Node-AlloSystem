@@ -38,6 +38,7 @@ namespace iv {
             virtual void tick() = 0;
 
             virtual int shaderCreate(const char* vertex, const char* fragment) = 0;
+            virtual int shaderCreate(const char* vertex, const char* fragment, const char* geometry_code, int geometry_in_primitive, int geometry_out_primitive, int geometry_out_vertices) = 0;
             virtual void shaderDelete(int id) = 0;
             virtual int shaderDefault() = 0;
             virtual void shaderBegin(int id) = 0;

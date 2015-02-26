@@ -161,6 +161,11 @@ namespace iv { namespace al {
             }
 
             glutIdleFunc(do_nothing);
+
+            std::printf("OpenGL Version: %s\n%s\n",
+                glGetString(GL_RENDERER),  // e.g. Intel HD Graphics 3000 OpenGL Engine
+                glGetString(GL_VERSION)    // e.g. 3.2 INTEL-8.0.61
+            );
         }
 
         virtual void setLens(const Lens& lens_) {
@@ -252,14 +257,44 @@ namespace iv { namespace al {
         ); }
 
         virtual int shaderCreate(const char* vertex_code, const char* fragment_code) {
+            std::string version_line = "#version 120\n";
             ShaderProgram* shader = new ShaderProgram();
             Shader vert, frag;
-            vert.source(per_vertex_glsl() + vertex_code, Shader::VERTEX).compile();
+            vert.source(version_line + per_vertex_glsl() + vertex_code, Shader::VERTEX).compile();
             vert.printLog();
-            frag.source(fragment_code, Shader::FRAGMENT).compile();
+            frag.source(version_line + fragment_code, Shader::FRAGMENT).compile();
             frag.printLog();
             shader->attach(vert).attach(frag).link();
             shader->printLog();
+            int id = mNextShaderID;
+            mNextShaderID += 1;
+            mShaders[id] = shader;
+            return id;
+        }
+
+        virtual int shaderCreate(const char* vertex_code, const char* fragment_code,
+            const char* geometry_code, int geometry_in_primitive, int geometry_out_primitive, int geometry_out_vertices) {
+            std::string version_line = "#version 120\n";
+            ShaderProgram* shader = new ShaderProgram();
+            Shader vert, frag, geom;
+            vert.source(version_line + per_vertex_glsl() + vertex_code, Shader::VERTEX).compile();
+            vert.printLog();
+            ::al::Graphics gl;
+            gl.error("vert");
+            frag.source(version_line + fragment_code, Shader::FRAGMENT).compile();
+            frag.printLog();
+            gl.error("frag");
+            geom.source(version_line + "#extension GL_EXT_geometry_shader4: enable\n" + per_vertex_glsl() + geometry_code, Shader::GEOMETRY).compile();
+            geom.printLog();
+            gl.error("geom");
+            shader->setGeometryInputPrimitive((Graphics::Primitive)geometry_in_primitive);
+            shader->setGeometryOutputPrimitive((Graphics::Primitive)geometry_out_primitive);
+            shader->setGeometryOutputVertices(geometry_out_vertices);
+            gl.error("set");
+            shader->attach(geom).attach(vert).attach(frag);
+            shader->link();
+            shader->printLog();
+            gl.error("link");
             int id = mNextShaderID;
             mNextShaderID += 1;
             mShaders[id] = shader;
