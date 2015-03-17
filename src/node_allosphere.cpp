@@ -177,6 +177,27 @@ Handle<Value> EXPORT_shaderUniformf(const Arguments& args) {
     return Undefined();
 }
 
+Handle<Value> EXPORT_shaderUniform2f(const Arguments& args) {
+  String::Utf8Value name(args[0]);
+    std::string name_(*name, *name + name.length());
+    application->app->shaderUniform2f(name_.c_str(), args[1]->NumberValue(), args[2]->NumberValue());
+    return Undefined();
+}
+
+Handle<Value> EXPORT_shaderUniform3f(const Arguments& args) {
+  String::Utf8Value name(args[0]);
+    std::string name_(*name, *name + name.length());
+    application->app->shaderUniform3f(name_.c_str(), args[1]->NumberValue(), args[2]->NumberValue(), args[3]->NumberValue());
+    return Undefined();
+}
+
+Handle<Value> EXPORT_shaderUniform4f(const Arguments& args) {
+  String::Utf8Value name(args[0]);
+    std::string name_(*name, *name + name.length());
+    application->app->shaderUniform4f(name_.c_str(), args[1]->NumberValue(), args[2]->NumberValue(), args[3]->NumberValue(), args[4]->NumberValue());
+    return Undefined();
+}
+
 Handle<Value> EXPORT_setLens(const Arguments& args) {
   iv::al::Lens lens;
   lens.eye_separation = args[0]->NumberValue();
@@ -216,6 +237,9 @@ void NODE_init(Handle<Object> exports) {
   exports->Set(String::NewSymbol("textureUnbind"), FunctionTemplate::New(EXPORT_textureUnbind)->GetFunction());
   exports->Set(String::NewSymbol("shaderUniformi"), FunctionTemplate::New(EXPORT_shaderUniformi)->GetFunction());
   exports->Set(String::NewSymbol("shaderUniformf"), FunctionTemplate::New(EXPORT_shaderUniformf)->GetFunction());
+  exports->Set(String::NewSymbol("shaderUniform2f"), FunctionTemplate::New(EXPORT_shaderUniform2f)->GetFunction());
+  exports->Set(String::NewSymbol("shaderUniform3f"), FunctionTemplate::New(EXPORT_shaderUniform3f)->GetFunction());
+  exports->Set(String::NewSymbol("shaderUniform4f"), FunctionTemplate::New(EXPORT_shaderUniform4f)->GetFunction());
   exports->Set(String::NewSymbol("setLens"), FunctionTemplate::New(EXPORT_setLens)->GetFunction());
   exports->Set(String::NewSymbol("setPose"), FunctionTemplate::New(EXPORT_setPose)->GetFunction());
   gl_factory = new GlFactory();

@@ -1,5 +1,6 @@
 
 #include "glbind.h"
+#include "node_buffer.h"
 
 #if defined(V8_GL_USE_GLEW)
 #include "GL/glew.h"
@@ -8848,19 +8849,12 @@ Handle<Value> GLglGenBuffersCallback(const Arguments& args) {
   if (args.Length() < 2) return v8::Undefined();
   //get arguments
   int arg0 = args[0]->IntegerValue();
-
-
-  Handle<Array> arrHandle1 = Handle<Array>::Cast(args[1]);
-  GLuint* arg1 = new GLuint[arrHandle1->Length()];
-  for (unsigned j = 0; j < arrHandle1->Length(); j++) {
-      Handle<Value> arg(arrHandle1->Get(Integer::New(j)));
-      GLuint aux = (GLuint)arg->Uint32Value();
-      arg1[j] = aux;
-  }
-
-
+  GLuint* arg1 = new GLuint[arg0];
   //make call
   glGenBuffers((GLsizei) arg0, (GLuint*) arg1);
+  for(int i = 0; i < arg0; i++) {
+    args[1]->ToObject()->Set(i, v8::Integer::New(arg1[i]));
+  }
   Handle<Object> res(GlFactory::self_);
   return res;
 }
@@ -10810,8 +10804,36 @@ Handle<Value> GLglUniformMatrix4x3fvCallback(const Arguments& args) {
   return res;
 }
 
+Handle<Value> GLglBufferDataCallback(const Arguments& args) {
+    GLenum target = args[0]->IntegerValue();
+    GLsizeiptr size = args[1]->IntegerValue();
+    void* data = node::Buffer::Data(args[2]->ToObject());
+    GLenum usage = args[3]->IntegerValue();
+    printf("Buffer data: %d %d %llx %d\n", target, size, data, usage);
+    glBufferData(target, size, data, usage);
+    Handle<Object> res(GlFactory::self_);
+    return res;
+}
 
+Handle<Value> GLglVertexPointerCallback(const Arguments& args) {
+  GLint size = args[0]->IntegerValue();
+  GLenum type = args[1]->IntegerValue();
+  GLsizei stride = args[2]->IntegerValue();
+  glVertexPointer(size, type, stride, NULL);
+    Handle<Object> res(GlFactory::self_);
+    return res;
+}
 
+Handle<Value> GLglVertexAttribPointerCallback(const Arguments& args) {
+  GLuint index = args[0]->IntegerValue();
+  GLint size = args[1]->IntegerValue();
+  GLenum type = args[2]->IntegerValue();
+  GLboolean normalized = args[3]->IntegerValue();
+  GLsizei stride = args[4]->IntegerValue();
+  glVertexAttribPointer(index, size, type, normalized, stride, NULL);
+  Handle<Object> res(GlFactory::self_);
+    return res;
+}
 
 Handle<ObjectTemplate> GlFactory::createGl(void) {
       HandleScope handle_scope;
@@ -13725,6 +13747,10 @@ Handle<ObjectTemplate> GlFactory::createGl(void) {
 
      Gl->Set(String::NewSymbol("uniformMatrix4x3fv"), FunctionTemplate::New(GLglUniformMatrix4x3fvCallback));
 
+    Gl->Set(String::NewSymbol("bufferData"), FunctionTemplate::New(GLglBufferDataCallback));
+    Gl->Set(String::NewSymbol("vertexPointer"), FunctionTemplate::New(GLglVertexPointerCallback));
+    Gl->Set(String::NewSymbol("vertexAttribPointer"), FunctionTemplate::New(GLglVertexAttribPointerCallback));
+    Gl->Set(String::NewSymbol("STATIC_DRAW"), Uint32::New(GL_STATIC_DRAW), ReadOnly);
 
       // Again, return the result through the current handle scope.
       return handle_scope.Close(Gl);

@@ -329,6 +329,15 @@ namespace iv { namespace al {
         virtual void shaderUniformf(const char* name, float value) {
             mCurrentShader->uniform(name, value);
         }
+        virtual void shaderUniform2f(const char* name, float value1, float value2) {
+            mCurrentShader->uniform(name, value1, value2);
+        }
+        virtual void shaderUniform3f(const char* name, float value1, float value2, float value3) {
+            mCurrentShader->uniform(name, value1, value2, value3);
+        }
+        virtual void shaderUniform4f(const char* name, float value1, float value2, float value3, float value4) {
+            mCurrentShader->uniform(name, value1, value2, value3, value4);
+        }
 
         virtual void shaderUniformi(const char* name, int value) {
             mCurrentShader->uniform(name, value);

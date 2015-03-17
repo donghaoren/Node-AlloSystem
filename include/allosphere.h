@@ -51,7 +51,10 @@ namespace iv {
             virtual void textureUnbind(int id, int target) = 0;
 
             // Other functions to call.
-            virtual void shaderUniformf(const char* name, float value) = 0;
+            virtual void shaderUniformf(const char* name, float) = 0;
+            virtual void shaderUniform2f(const char* name, float, float) = 0;
+            virtual void shaderUniform3f(const char* name, float, float, float) = 0;
+            virtual void shaderUniform4f(const char* name, float, float, float, float) = 0;
             virtual void shaderUniformi(const char* name, int value) = 0;
 
             virtual ~Application() { };
