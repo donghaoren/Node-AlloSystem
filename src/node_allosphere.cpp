@@ -223,6 +223,12 @@ Handle<Value> EXPORT_enableWindowNavigation(const Arguments& args) {
   application->app->enableWindowNavigation();
   return Undefined();
 }
+
+Handle<Value> EXPORT_enableOSCNavigation(const Arguments& args) {
+  application->app->enableOSCNavigation();
+  return Undefined();
+}
+
 Handle<Value> EXPORT_setProjectionMode(const Arguments& args) {
   String::Utf8Value mode(args[0]);
   std::string mode_(*mode, *mode + mode.length());
@@ -271,6 +277,7 @@ void NODE_init(Handle<Object> exports) {
   exports->Set(String::NewSymbol("setLens"), FunctionTemplate::New(EXPORT_setLens)->GetFunction());
   exports->Set(String::NewSymbol("setPose"), FunctionTemplate::New(EXPORT_setPose)->GetFunction());
   exports->Set(String::NewSymbol("enableWindowNavigation"), FunctionTemplate::New(EXPORT_enableWindowNavigation)->GetFunction());
+  exports->Set(String::NewSymbol("enableOSCNavigation"), FunctionTemplate::New(EXPORT_enableOSCNavigation)->GetFunction());
   exports->Set(String::NewSymbol("setProjectionMode"), FunctionTemplate::New(EXPORT_setProjectionMode)->GetFunction());
   exports->Set(String::NewSymbol("setStereoMode"), FunctionTemplate::New(EXPORT_setStereoMode)->GetFunction());
   gl_factory = new GlFactory();

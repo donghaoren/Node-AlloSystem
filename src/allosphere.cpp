@@ -98,13 +98,17 @@ namespace iv { namespace al {
     //     Delegate* delegate;
     // };
 
-    class ApplicationImpl : public Window, public FPS, public OmniStereo::Drawable, public Application {
+    class ApplicationImpl : public Window, public FPS, public OmniStereo::Drawable, public Application, public osc::PacketHandler {
     public:
 
         ApplicationImpl() : mNavControl(mNav) {
             mLens.near(0.01).far(40).eyeSep(0.1);
             mNav.smooth(0.8);
             mRadius = 5;
+
+            mOSCRecv = NULL;
+            mNavSpeed = 1;
+            mNavTurnSpeed = 0.02;
 
             window_navigation_enabled = false;
 
@@ -170,6 +174,7 @@ namespace iv { namespace al {
 
         virtual bool onFrame() {
             FPS::onFrame();
+            while(mOSCRecv && mOSCRecv->recv());
             if(window_navigation_enabled) mNav.step();
             Viewport vp(width(), height());
             if(delegate) delegate->onFrame();
@@ -482,6 +487,47 @@ namespace iv { namespace al {
         std::map<int, Texture*> mTextures;
         int mNextTextureID;
         Texture* mCurrentTexture;
+
+        void onMessage(osc::Message& m) {
+          float x;
+          if (m.addressPattern() == "/mx") {
+            m >> x;
+            mNav.moveR(-x * mNavSpeed);
+
+          } else if (m.addressPattern() == "/my") {
+            m >> x;
+            mNav.moveU(x * mNavSpeed);
+
+          } else if (m.addressPattern() == "/mz") {
+            m >> x;
+            mNav.moveF(x * mNavSpeed);
+
+          } else if (m.addressPattern() == "/tx") {
+            m >> x;
+            mNav.spinR(x * -mNavTurnSpeed);
+
+          } else if (m.addressPattern() == "/ty") {
+            m >> x;
+            mNav.spinU(x * mNavTurnSpeed);
+
+          } else if (m.addressPattern() == "/tz") {
+            m >> x;
+            mNav.spinF(x * -mNavTurnSpeed);
+
+          } else if (m.addressPattern() == "/home") {
+            mNav.home();
+
+          } else if (m.addressPattern() == "/halt") {
+            mNav.halt();
+          }
+        }
+        osc::Recv* mOSCRecv;
+        double mNavSpeed, mNavTurnSpeed;
+        virtual void enableOSCNavigation() {
+            mOSCRecv = new osc::Recv(12001);
+            mOSCRecv->bufferSize(32000);
+            mOSCRecv->handler(*this);
+        }
 
     };
 

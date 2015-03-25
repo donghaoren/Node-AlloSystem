@@ -47,6 +47,7 @@ namespace iv {
             virtual void setProjectionMode(ProjectionMode mode) = 0;
             virtual void setStereoMode(StereoMode mode) = 0;
             virtual void enableWindowNavigation() = 0;
+            virtual void enableOSCNavigation() = 0;
 
             virtual void setDelegate(Delegate*) = 0;
             virtual void initialize() = 0;
