@@ -19,6 +19,18 @@ namespace iv {
             double eye;  // which eye.
         };
 
+        enum ProjectionMode {
+            PERSPECTIVE = 0,
+            FISHEYE = 1
+        };
+
+        enum StereoMode {
+            MONO = 0,
+            ANAGLYPH = 1,
+            ANAGLYPH_BLEND = 2,
+            DUAL = 3
+        };
+
         class Application {
         public:
             class Delegate {
@@ -32,6 +44,9 @@ namespace iv {
 
             virtual void setLens(const Lens& lens) = 0;
             virtual void setPose(const Pose& pose) = 0;
+            virtual void setProjectionMode(ProjectionMode mode) = 0;
+            virtual void setStereoMode(StereoMode mode) = 0;
+            virtual void enableWindowNavigation() = 0;
 
             virtual void setDelegate(Delegate*) = 0;
             virtual void initialize() = 0;

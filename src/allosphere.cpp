@@ -101,10 +101,12 @@ namespace iv { namespace al {
     class ApplicationImpl : public Window, public FPS, public OmniStereo::Drawable, public Application {
     public:
 
-        ApplicationImpl() {
+        ApplicationImpl() : mNavControl(mNav) {
             mLens.near(0.01).far(40).eyeSep(0.1);
             mNav.smooth(0.8);
             mRadius = 5;
+
+            window_navigation_enabled = false;
 
             Window::dimensions(Window::Dim(800, 400));
             Window::title("AllosphereNodejsApplication");
@@ -116,10 +118,44 @@ namespace iv { namespace al {
             mOmni.configure("", Socket::hostName());
             if(mOmni.activeStereo()) {
                 mOmni.mode(OmniStereo::ACTIVE).stereo(true);
+            } else {
+                mOmni.mode(OmniStereo::MONO).stereo(false);
             }
 
             mNextShaderID = 100;
             mNextTextureID = 100;
+        }
+
+        virtual void setProjectionMode(ProjectionMode mode) {
+            if(mode == PERSPECTIVE) {
+                if(mOmni.mode() == OmniStereo::DUAL) {
+                    mOmni.configure(OmniStereo::NOBLEND).configure(OmniStereo::RECT, (float)width() / height() / 2.0f);
+                } else {
+                    mOmni.configure(OmniStereo::NOBLEND).configure(OmniStereo::RECT, (float)width() / height());
+                }
+            } else if(mode == FISHEYE) {
+                mOmni.configure(OmniStereo::NOBLEND).configure(OmniStereo::FISHEYE);
+            }
+        }
+
+        virtual void setStereoMode(StereoMode mode) {
+            if(mode == MONO) {
+                mOmni.mode(OmniStereo::MONO).stereo(false);
+            }
+            if(mode == ANAGLYPH) {
+                mOmni.mode(OmniStereo::ANAGLYPH).stereo(true);
+            }
+            if(mode == ANAGLYPH_BLEND) {
+                mOmni.mode(OmniStereo::ANAGLYPH_BLEND).stereo(true);
+            }
+            if(mode == DUAL) {
+                mOmni.mode(OmniStereo::DUAL).stereo(true);
+            }
+        }
+
+        virtual void enableWindowNavigation() {
+            Window::append(mNavControl);
+            window_navigation_enabled = true;
         }
 
         virtual bool onCreate() {
@@ -134,6 +170,7 @@ namespace iv { namespace al {
 
         virtual bool onFrame() {
             FPS::onFrame();
+            if(window_navigation_enabled) mNav.step();
             Viewport vp(width(), height());
             if(delegate) delegate->onFrame();
             mOmni.onFrame(*this, mLens, mNav, vp);
@@ -143,6 +180,7 @@ namespace iv { namespace al {
         virtual void onDrawOmni(OmniStereo& omni) {
             DrawInfo info;
             info.eye = omni.eye();
+            glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
             if(delegate) delegate->onDraw(info);
         }
 
@@ -427,6 +465,8 @@ namespace iv { namespace al {
         float mRadius;
         ::al::Graphics mGraphics;
         ::al::Nav mNav;
+        ::al::NavInputControl mNavControl;
+        bool window_navigation_enabled;
 
         OmniStereo mOmni;
 

@@ -178,21 +178,21 @@ Handle<Value> EXPORT_shaderUniformf(const Arguments& args) {
 }
 
 Handle<Value> EXPORT_shaderUniform2f(const Arguments& args) {
-  String::Utf8Value name(args[0]);
+    String::Utf8Value name(args[0]);
     std::string name_(*name, *name + name.length());
     application->app->shaderUniform2f(name_.c_str(), args[1]->NumberValue(), args[2]->NumberValue());
     return Undefined();
 }
 
 Handle<Value> EXPORT_shaderUniform3f(const Arguments& args) {
-  String::Utf8Value name(args[0]);
+    String::Utf8Value name(args[0]);
     std::string name_(*name, *name + name.length());
     application->app->shaderUniform3f(name_.c_str(), args[1]->NumberValue(), args[2]->NumberValue(), args[3]->NumberValue());
     return Undefined();
 }
 
 Handle<Value> EXPORT_shaderUniform4f(const Arguments& args) {
-  String::Utf8Value name(args[0]);
+    String::Utf8Value name(args[0]);
     std::string name_(*name, *name + name.length());
     application->app->shaderUniform4f(name_.c_str(), args[1]->NumberValue(), args[2]->NumberValue(), args[3]->NumberValue(), args[4]->NumberValue());
     return Undefined();
@@ -219,6 +219,34 @@ Handle<Value> EXPORT_setPose(const Arguments& args) {
   return Undefined();
 }
 
+Handle<Value> EXPORT_enableWindowNavigation(const Arguments& args) {
+  application->app->enableWindowNavigation();
+  return Undefined();
+}
+Handle<Value> EXPORT_setProjectionMode(const Arguments& args) {
+  String::Utf8Value mode(args[0]);
+  std::string mode_(*mode, *mode + mode.length());
+  if(mode_ == "perspective")
+    application->app->setProjectionMode(iv::al::PERSPECTIVE);
+  if(mode_ == "fisheye")
+    application->app->setProjectionMode(iv::al::FISHEYE);
+  return Undefined();
+}
+
+Handle<Value> EXPORT_setStereoMode(const Arguments& args) {
+  String::Utf8Value mode(args[0]);
+  std::string mode_(*mode, *mode + mode.length());
+  if(mode_ == "anaglyph_blend")
+    application->app->setStereoMode(iv::al::ANAGLYPH_BLEND);
+  if(mode_ == "anaglyph")
+    application->app->setStereoMode(iv::al::ANAGLYPH);
+  if(mode_ == "dual")
+    application->app->setStereoMode(iv::al::DUAL);
+  if(mode_ == "mono")
+    application->app->setStereoMode(iv::al::MONO);
+  return Undefined();
+}
+
 void NODE_init(Handle<Object> exports) {
   exports->Set(String::NewSymbol("initialize"), FunctionTemplate::New(EXPORT_initialize)->GetFunction());
   exports->Set(String::NewSymbol("tick"), FunctionTemplate::New(EXPORT_tick)->GetFunction());
@@ -242,6 +270,9 @@ void NODE_init(Handle<Object> exports) {
   exports->Set(String::NewSymbol("shaderUniform4f"), FunctionTemplate::New(EXPORT_shaderUniform4f)->GetFunction());
   exports->Set(String::NewSymbol("setLens"), FunctionTemplate::New(EXPORT_setLens)->GetFunction());
   exports->Set(String::NewSymbol("setPose"), FunctionTemplate::New(EXPORT_setPose)->GetFunction());
+  exports->Set(String::NewSymbol("enableWindowNavigation"), FunctionTemplate::New(EXPORT_enableWindowNavigation)->GetFunction());
+  exports->Set(String::NewSymbol("setProjectionMode"), FunctionTemplate::New(EXPORT_setProjectionMode)->GetFunction());
+  exports->Set(String::NewSymbol("setStereoMode"), FunctionTemplate::New(EXPORT_setStereoMode)->GetFunction());
   gl_factory = new GlFactory();
   exports->Set(String::NewSymbol("OpenGL"), gl_factory->createGl()->NewInstance());
 }
