@@ -246,7 +246,7 @@ namespace iv { namespace al {
             uniform float omni_radius;
             uniform float omni_near;
             uniform float omni_far;
-            vec4 omni_render(in vec4 vertex) {
+            vec3 omni_displace(in vec3 vertex) {
                 float l = length(vertex.xyz);
                 vec3 vn = normalize(vertex.xyz);
                 // Precise formula.
@@ -264,8 +264,9 @@ namespace iv { namespace al {
                 // v.xyz -= omni_eye * cross(vn, vec3(0, 1, 0));
                 // simplified:
                 vertex.xz += vec2(displacement * vn.z, displacement * -vn.x);
-                // convert eye-space into cubemap-space:
-                // GL_TEXTURE_CUBE_MAP_POSITIVE_X
+                return vertex;
+            }
+            vec4 omni_project(in vec4 vertex) {
                 if (omni_face == 0) {
                   vertex.xyz = vec3(-vertex.z, -vertex.y, -vertex.x);
                 }
@@ -297,6 +298,10 @@ namespace iv { namespace al {
                                  -vertex.z);
                 return vertex;
             }
+            vec4 omni_render(in vec4 vertex) {
+                vertex.xyz = omni_displace(vertex.xyz);
+                return omni_project(vertex);
+            }
         ); }
 
         virtual int shaderCreate(const char* vertex_code, const char* fragment_code) {
@@ -305,7 +310,7 @@ namespace iv { namespace al {
             Shader vert, frag;
             vert.source(version_line + per_vertex_glsl() + vertex_code, Shader::VERTEX).compile();
             vert.printLog();
-            frag.source(version_line + fragment_code, Shader::FRAGMENT).compile();
+            frag.source(version_line + per_vertex_glsl() + fragment_code, Shader::FRAGMENT).compile();
             frag.printLog();
             shader->attach(vert).attach(frag).link();
             shader->printLog();
@@ -324,7 +329,7 @@ namespace iv { namespace al {
             vert.printLog();
             ::al::Graphics gl;
             gl.error("vert");
-            frag.source(version_line + fragment_code, Shader::FRAGMENT).compile();
+            frag.source(version_line + per_vertex_glsl() + fragment_code, Shader::FRAGMENT).compile();
             frag.printLog();
             gl.error("frag");
             geom.source(version_line + "#extension GL_EXT_geometry_shader4: enable\n" + per_vertex_glsl() + geometry_code, Shader::GEOMETRY).compile();
