@@ -42,6 +42,8 @@ namespace iv {
                 virtual ~Delegate() { };
             };
 
+            virtual void setSize(int width, int height) = 0;
+
             virtual void setLens(const Lens& lens) = 0;
             virtual void setPose(const Pose& pose) = 0;
             virtual void setProjectionMode(ProjectionMode mode) = 0;

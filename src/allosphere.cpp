@@ -230,6 +230,10 @@ namespace iv { namespace al {
             delegate = delegate_;
         }
 
+        virtual void setSize(int width, int height) {
+            Window::dimensions(Window::Dim(width, height));
+        }
+
         virtual void tick() {
         #ifdef PLATFORM_LINUX
             glutMainLoopEvent();

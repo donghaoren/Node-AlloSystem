@@ -253,6 +253,12 @@ Handle<Value> EXPORT_setStereoMode(const Arguments& args) {
   return Undefined();
 }
 
+Handle<Value> EXPORT_setSize(const Arguments& args) {
+  int w = args[0]->IntegerValue();
+  int h = args[0]->IntegerValue();
+  application->app->setSize(w, h);
+}
+
 void NODE_init(Handle<Object> exports) {
   exports->Set(String::NewSymbol("initialize"), FunctionTemplate::New(EXPORT_initialize)->GetFunction());
   exports->Set(String::NewSymbol("tick"), FunctionTemplate::New(EXPORT_tick)->GetFunction());
@@ -280,6 +286,7 @@ void NODE_init(Handle<Object> exports) {
   exports->Set(String::NewSymbol("enableOSCNavigation"), FunctionTemplate::New(EXPORT_enableOSCNavigation)->GetFunction());
   exports->Set(String::NewSymbol("setProjectionMode"), FunctionTemplate::New(EXPORT_setProjectionMode)->GetFunction());
   exports->Set(String::NewSymbol("setStereoMode"), FunctionTemplate::New(EXPORT_setStereoMode)->GetFunction());
+  exports->Set(String::NewSymbol("setSize"), FunctionTemplate::New(EXPORT_setSize)->GetFunction());
   gl_factory = new GlFactory();
   exports->Set(String::NewSymbol("OpenGL"), gl_factory->createGl()->NewInstance());
 }
