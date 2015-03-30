@@ -255,7 +255,7 @@ Handle<Value> EXPORT_setStereoMode(const Arguments& args) {
 
 Handle<Value> EXPORT_setSize(const Arguments& args) {
   int w = args[0]->IntegerValue();
-  int h = args[0]->IntegerValue();
+  int h = args[1]->IntegerValue();
   application->app->setSize(w, h);
 }
 
