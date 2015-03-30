@@ -259,6 +259,21 @@ Handle<Value> EXPORT_setSize(const Arguments& args) {
   application->app->setSize(w, h);
 }
 
+void delete_unsigned_char_callback(char* ptr, void*) {
+    unsigned char* pointer = (unsigned char*)ptr;
+    delete [] pointer;
+}
+
+Handle<Value> EXPORT_screenCapture(const Arguments& args) {
+  int x = args[0]->IntegerValue();
+  int y = args[1]->IntegerValue();
+  int w = args[2]->IntegerValue();
+  int h = args[3]->IntegerValue();
+  unsigned char* data = new unsigned char[w * h * 4];
+  application->app->screenCapture(x, y, w, h, data);
+  return node::Buffer::New((char*)data, w * h * 4, delete_unsigned_char_callback, NULL)->handle_;
+}
+
 void NODE_init(Handle<Object> exports) {
   exports->Set(String::NewSymbol("initialize"), FunctionTemplate::New(EXPORT_initialize)->GetFunction());
   exports->Set(String::NewSymbol("tick"), FunctionTemplate::New(EXPORT_tick)->GetFunction());
@@ -287,6 +302,7 @@ void NODE_init(Handle<Object> exports) {
   exports->Set(String::NewSymbol("setProjectionMode"), FunctionTemplate::New(EXPORT_setProjectionMode)->GetFunction());
   exports->Set(String::NewSymbol("setStereoMode"), FunctionTemplate::New(EXPORT_setStereoMode)->GetFunction());
   exports->Set(String::NewSymbol("setSize"), FunctionTemplate::New(EXPORT_setSize)->GetFunction());
+  exports->Set(String::NewSymbol("screenCapture"), FunctionTemplate::New(EXPORT_screenCapture)->GetFunction());
   gl_factory = new GlFactory();
   exports->Set(String::NewSymbol("OpenGL"), gl_factory->createGl()->NewInstance());
 }

@@ -234,6 +234,22 @@ namespace iv { namespace al {
             Window::dimensions(Window::Dim(width, height));
         }
 
+        virtual void screenCapture(int x, int y, int width, int height, void* data) {
+            glReadBuffer(GL_FRONT);
+            glReadPixels(x, y, width, height, GL_RGBA, GL_UNSIGNED_BYTE, data);
+            // Flip the image.
+            unsigned char* datab = (unsigned char*)data;
+            for(int iy = 0; iy < height / 2; iy++) {
+                unsigned char* row1 = datab + iy * width * 4;
+                unsigned char* row2 = datab + (height - 1 - iy) * width * 4;
+                for(int ix = 0; ix < width * 4; ix++) {
+                    unsigned char tmp = row2[ix];
+                    row2[ix] = row1[ix];
+                    row1[ix] = tmp;
+                }
+            }
+        }
+
         virtual void tick() {
         #ifdef PLATFORM_LINUX
             glutMainLoopEvent();
