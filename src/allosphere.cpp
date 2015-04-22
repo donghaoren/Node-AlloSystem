@@ -12,9 +12,57 @@
   #include <GL/freeglut_ext.h>
 #endif
 
+#include <allovolume/omnistereo_renderer.h>
+
 using namespace ::al;
 
 #define str(x) #x
+
+#pragma mark GLSL
+static const char * vGeneric = AL_STRINGIFY(
+    varying vec2 T;
+    void main(void) {
+        // pass through the texture coordinate (normalized pixel):
+        T = vec2(gl_MultiTexCoord0);
+        gl_Position = vec4(T*2.-1., 0, 1);
+    }
+);
+
+#pragma mark Cube GLSL
+static const char * fCube = AL_STRINGIFY(
+    uniform sampler2D pixelMap;
+    uniform sampler2D alphaMap;
+    uniform sampler2D volumeFront;
+    uniform sampler2D volumeBack;
+    uniform samplerCube cubeMap;
+
+    varying vec2 T;
+
+    vec4 blend(vec4 src, vec4 dst) {
+        vec4 result;
+        result.a = src.a + dst.a * (1.0 - src.a);
+        result.rgb = (src.rgb * src.a + dst.rgb * dst.a * (1.0 - src.a)) / result.a;
+        if(result.a == 0.0) result.rgb = vec3(0.0, 0.0, 0.0);
+        return result;
+    }
+
+    void main (void){
+        // ray location (calibration space):
+        vec3 v = normalize(texture2D(pixelMap, T).rgb);
+
+        // index into cubemap:
+        vec4 color = textureCube(cubeMap, v);
+        // Volume colors are non-premultiplied.
+        vec4 vf = texture2D(volumeFront, T);
+        vec4 vb = texture2D(volumeBack, T);
+        color = blend(vf, blend(color, vb));
+        // //color = vf + vb;
+        //color = blend(vf, color);
+
+        vec3 rgb = color.rgb * color.a * texture2D(alphaMap, T).rgb;
+        gl_FragColor = vec4(rgb, 1.0);
+    }
+);
 
 namespace iv { namespace al {
 
@@ -98,11 +146,11 @@ namespace iv { namespace al {
     //     Delegate* delegate;
     // };
 
-    class ApplicationImpl : public Window, public FPS, public OmniStereo::Drawable, public Application, public osc::PacketHandler {
+    class ApplicationImpl : public Window, public FPS, public OmniStereo::Drawable, public Application, public osc::PacketHandler, public allovolume::OmnistereoRenderer::Delegate {
     public:
 
         ApplicationImpl() : mNavControl(mNav) {
-            mLens.near(0.01).far(40).eyeSep(0.1);
+            mLens.near(0.01).far(500).eyeSep(0.1);
             mNav.smooth(0.8);
             mRadius = 5;
 
@@ -128,6 +176,8 @@ namespace iv { namespace al {
 
             mNextShaderID = 100;
             mNextTextureID = 100;
+
+            allovolume_renderer = NULL;
         }
 
         virtual void setProjectionMode(ProjectionMode mode) {
@@ -164,12 +214,40 @@ namespace iv { namespace al {
 
         virtual bool onCreate() {
             mOmni.onCreate();
+            Shader cubeV, cubeF;
+            cubeV.source(vGeneric, Shader::VERTEX).compile();
+            cubeF.source(fCube, Shader::FRAGMENT).compile();
+            mCubeProgram.attach(cubeV).attach(cubeF);
+            mCubeProgram.link(false);   // false means do not validate
+            // set uniforms before validating to prevent validation error
+            mCubeProgram.begin();
+                mCubeProgram.uniform("cubeMap", 0);
+                mCubeProgram.uniform("pixelMap", 1);
+                mCubeProgram.uniform("alphaMap", 2);
+                mCubeProgram.uniform("volumeBack", 3);
+                mCubeProgram.uniform("volumeFront", 4);
+            mCubeProgram.end();
+            mCubeProgram.validate();
+            cubeV.printLog();
+            cubeF.printLog();
+            mCubeProgram.printLog();
 
             mDefaultShaderID = shaderCreate(default_vertex_code().c_str(), default_fragment_code().c_str());
             shaderBegin(mDefaultShaderID);
             shaderEnd(mDefaultShaderID);
 
+            mOmni.clearColor() = ::al::Color(0, 0, 0, 0);
+
             if(delegate) delegate->onCreate();
+        }
+
+        virtual void launchAlloVolume() {
+            allovolume_renderer = allovolume::OmnistereoRenderer::CreateWithYAMLConfig("/Users/donghao/Documents/Projects/AlloVolumeRendering/build/allovolume.yaml");
+            allovolume_renderer->setDelegate(this);
+        }
+
+        virtual void onPresent() {
+            printf("onPresent()\n");
         }
 
         virtual bool onFrame() {
@@ -178,7 +256,66 @@ namespace iv { namespace al {
             if(window_navigation_enabled) mNav.step();
             Viewport vp(width(), height());
             if(delegate) delegate->onFrame();
-            mOmni.onFrame(*this, mLens, mNav, vp);
+            mOmni.capture(*this, mLens, mNav);
+            if(allovolume_renderer && allovolume_renderer->isReady()) {
+                allovolume_renderer->loadDepthCubemap(mOmni.textureDepthLeft(), mOmni.textureDepthRight(), mLens.near(), mLens.far());
+
+                allovolume_renderer->uploadTextures();
+
+                glViewport(0, 0, width(), height());
+                glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+                for (int i = 0; i < mOmni.numProjections(); i++) {
+                    OmniStereo::Projection& p = mOmni.projection(i);
+                    Viewport& v = p.viewport();
+                    Viewport viewport(
+                        vp.l + v.l * vp.w,
+                        vp.b + v.b * vp.h,
+                        v.w * vp.w,
+                        v.h * vp.h
+                    );
+                    gl.viewport(viewport);
+                    //gl.clear(Graphics::COLOR_BUFFER_BIT | Graphics::DEPTH_BUFFER_BIT);
+                    p.blend().bind(2);
+                    p.warp().bind(1);
+
+                    gl.error("OmniStereo cube draw begin");
+
+                    mCubeProgram.begin();
+
+                    gl.error("OmniStereo cube drawStereo begin");
+
+                    allovolume::OmnistereoRenderer::Textures volume_front_back = allovolume_renderer->getTextures(i, 0);
+                    glActiveTexture(GL_TEXTURE3);
+                    glEnable(GL_TEXTURE_2D);
+                    glBindTexture(GL_TEXTURE_2D, volume_front_back.back);
+                    glActiveTexture(GL_TEXTURE4);
+                    glEnable(GL_TEXTURE_2D);
+                    glBindTexture(GL_TEXTURE_2D, volume_front_back.front);
+
+                    glActiveTexture(GL_TEXTURE0);
+                    glEnable(GL_TEXTURE_CUBE_MAP);
+
+                    mOmni.drawStereo<&OmniStereo::drawEye>(mLens, mNav, viewport);
+
+                    gl.error("OmniStereo cube drawStereo end");
+
+                    glBindTexture(GL_TEXTURE_CUBE_MAP, 0);
+                    glDisable(GL_TEXTURE_CUBE_MAP);
+
+                    glActiveTexture(GL_TEXTURE3);
+                    glBindTexture(GL_TEXTURE_2D, 0);
+                    glActiveTexture(GL_TEXTURE4);
+                    glBindTexture(GL_TEXTURE_2D, 0);
+
+                    mCubeProgram.end();
+                    gl.error("OmniStereo cube draw end");
+
+                    p.blend().unbind(2);
+                    p.warp().unbind(1);
+                }
+            } else {
+                mOmni.draw(mLens, mNav, vp);
+            }
             return true;
         }
 
@@ -226,7 +363,7 @@ namespace iv { namespace al {
             mNav.quat().w = pose_.rotation.w;
         }
 
-        virtual void setDelegate(Delegate* delegate_) {
+        virtual void setDelegate(Application::Delegate* delegate_) {
             delegate = delegate_;
         }
 
@@ -500,7 +637,7 @@ namespace iv { namespace al {
 
         OmniStereo mOmni;
 
-        Delegate* delegate;
+        Application::Delegate* delegate;
 
         StandardWindowKeyControls mStdControls;
 
@@ -512,6 +649,8 @@ namespace iv { namespace al {
         std::map<int, Texture*> mTextures;
         int mNextTextureID;
         Texture* mCurrentTexture;
+
+        allovolume::OmnistereoRenderer* allovolume_renderer;
 
         void onMessage(osc::Message& m) {
           float x;
@@ -553,7 +692,8 @@ namespace iv { namespace al {
             mOSCRecv->bufferSize(32000);
             mOSCRecv->handler(*this);
         }
-
+        Graphics gl;
+        ShaderProgram mCubeProgram;
     };
 
     Application* Application::Create() {

@@ -4,6 +4,6 @@ SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
 ROOT_DIR=$SCRIPT_DIR/deploy
 
-export DYLD_LIBRARY_PATH=$DYLD_LIBRARY_PATH:$ROOT_DIR/lib:$ROOT_DIR/deps
+export DYLD_LIBRARY_PATH=$DYLD_LIBRARY_PATH:$ROOT_DIR/lib:$ROOT_DIR/deps:/opt/allosystem/lib
 export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$ROOT_DIR/lib:$ROOT_DIR/deps
 export NODE_PATH=$NODE_PATH:$ROOT_DIR/modules

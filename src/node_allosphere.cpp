@@ -274,6 +274,11 @@ Handle<Value> EXPORT_screenCapture(const Arguments& args) {
   return node::Buffer::New((char*)data, w * h * 4, delete_unsigned_char_callback, NULL)->handle_;
 }
 
+Handle<Value> EXPORT_launchAlloVolume(const Arguments& args) {
+  application->app->launchAlloVolume();
+  return Undefined();
+}
+
 void NODE_init(Handle<Object> exports) {
   exports->Set(String::NewSymbol("initialize"), FunctionTemplate::New(EXPORT_initialize)->GetFunction());
   exports->Set(String::NewSymbol("tick"), FunctionTemplate::New(EXPORT_tick)->GetFunction());
@@ -303,6 +308,7 @@ void NODE_init(Handle<Object> exports) {
   exports->Set(String::NewSymbol("setStereoMode"), FunctionTemplate::New(EXPORT_setStereoMode)->GetFunction());
   exports->Set(String::NewSymbol("setSize"), FunctionTemplate::New(EXPORT_setSize)->GetFunction());
   exports->Set(String::NewSymbol("screenCapture"), FunctionTemplate::New(EXPORT_screenCapture)->GetFunction());
+  exports->Set(String::NewSymbol("launchAlloVolume"), FunctionTemplate::New(EXPORT_launchAlloVolume)->GetFunction());
   gl_factory = new GlFactory();
   exports->Set(String::NewSymbol("OpenGL"), gl_factory->createGl()->NewInstance());
 }
