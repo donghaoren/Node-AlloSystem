@@ -275,7 +275,9 @@ Handle<Value> EXPORT_screenCapture(const Arguments& args) {
 }
 
 Handle<Value> EXPORT_launchAlloVolume(const Arguments& args) {
-  application->app->launchAlloVolume();
+  String::Utf8Value path(args[0]);
+  std::string path_(*path, *path + path.length());
+  application->app->launchAlloVolume(path_.c_str());
   return Undefined();
 }
 

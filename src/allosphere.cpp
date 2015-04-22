@@ -241,8 +241,8 @@ namespace iv { namespace al {
             if(delegate) delegate->onCreate();
         }
 
-        virtual void launchAlloVolume() {
-            allovolume_renderer = allovolume::OmnistereoRenderer::CreateWithYAMLConfig("/Users/donghao/Documents/Projects/AlloVolumeRendering/build/allovolume.yaml");
+        virtual void launchAlloVolume(const char* path) {
+            allovolume_renderer = allovolume::OmnistereoRenderer::CreateWithYAMLConfig(path);
             allovolume_renderer->setDelegate(this);
         }
 

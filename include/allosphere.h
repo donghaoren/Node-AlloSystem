@@ -45,7 +45,7 @@ namespace iv {
             virtual void setSize(int width, int height) = 0;
             virtual void screenCapture(int x, int y, int width, int height, void* data) = 0;
 
-            virtual void launchAlloVolume() = 0;
+            virtual void launchAlloVolume(const char* path) = 0;
 
             virtual void setLens(const Lens& lens) = 0;
             virtual void setPose(const Pose& pose) = 0;
