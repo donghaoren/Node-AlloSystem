@@ -120,7 +120,7 @@ INCLUDE_DIRECTORIES (
   TARGET_LINK_LIBRARIES ( node-allosphere
     ${ALLOCORE_LIBRARIES}
     ${ALLOUTIL_LIBRARIES}
-    /opt/allosystem/lib/liballovolume_omnistereo_renderer.dylib
+    /opt/allosystem/lib/liballovolume_omnistereo_renderer.so
   )
 
 #----------------------------------------------------------------------------------------------------------------------

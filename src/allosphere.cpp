@@ -146,6 +146,41 @@ namespace iv { namespace al {
     //     Delegate* delegate;
     // };
 
+    class MyOmniStereo : public ::al::OmniStereo {
+    public:
+        virtual void drawEye(const ::al::Pose& pose, double eye) {
+            if (eye > 0.) {
+                glActiveTexture(GL_TEXTURE3);
+                glEnable(GL_TEXTURE_2D);
+                glBindTexture(GL_TEXTURE_2D, volume_front_back_right.back);
+                glActiveTexture(GL_TEXTURE4);
+                glEnable(GL_TEXTURE_2D);
+                glBindTexture(GL_TEXTURE_2D, volume_front_back_right.front);
+
+                glActiveTexture(GL_TEXTURE0);
+                glEnable(GL_TEXTURE_CUBE_MAP);
+                glBindTexture(GL_TEXTURE_CUBE_MAP, mTex[1]);
+            } else {
+                glActiveTexture(GL_TEXTURE3);
+                glEnable(GL_TEXTURE_2D);
+                glBindTexture(GL_TEXTURE_2D, volume_front_back_left.back);
+                glActiveTexture(GL_TEXTURE4);
+                glEnable(GL_TEXTURE_2D);
+                glBindTexture(GL_TEXTURE_2D, volume_front_back_left.front);
+
+                glActiveTexture(GL_TEXTURE0);
+                glEnable(GL_TEXTURE_CUBE_MAP);
+                glBindTexture(GL_TEXTURE_CUBE_MAP, mTex[0]);
+            }
+            gl.error("OmniStereo drawEye after texture");
+            gl.draw(mQuad);
+            gl.error("OmniStereo drawEye after quad");
+        }
+
+        allovolume::OmnistereoRenderer::Textures volume_front_back_left, volume_front_back_right;
+    protected:
+    };
+
     class ApplicationImpl : public Window, public FPS, public OmniStereo::Drawable, public Application, public osc::PacketHandler, public allovolume::OmnistereoRenderer::Delegate {
     public:
 
@@ -284,19 +319,13 @@ namespace iv { namespace al {
 
                     gl.error("OmniStereo cube drawStereo begin");
 
-                    allovolume::OmnistereoRenderer::Textures volume_front_back = allovolume_renderer->getTextures(i, 0);
+                    allovolume::OmnistereoRenderer::Textures volume_front_back_left = allovolume_renderer->getTextures(i, 0);
+                    mOmni.volume_front_back_left = volume_front_back_left;
+                    allovolume::OmnistereoRenderer::Textures volume_front_back_right = allovolume_renderer->getTextures(i, 1);
+                    mOmni.volume_front_back_right = volume_front_back_right;
 
-                    glActiveTexture(GL_TEXTURE3);
-                    glEnable(GL_TEXTURE_2D);
-                    glBindTexture(GL_TEXTURE_2D, volume_front_back.back);
-                    glActiveTexture(GL_TEXTURE4);
-                    glEnable(GL_TEXTURE_2D);
-                    glBindTexture(GL_TEXTURE_2D, volume_front_back.front);
-
-                    glActiveTexture(GL_TEXTURE0);
-                    glEnable(GL_TEXTURE_CUBE_MAP);
-
-                    mOmni.drawStereo<&OmniStereo::drawEye>(mLens, mNav, viewport);
+                    //drawStereo(vp, mLens);
+                    mOmni.drawStereo<&OmniStereo::drawEyeVirtual>(mLens, mNav, viewport);
 
                     gl.error("OmniStereo cube drawStereo end");
 
@@ -636,7 +665,7 @@ namespace iv { namespace al {
         ::al::NavInputControl mNavControl;
         bool window_navigation_enabled;
 
-        OmniStereo mOmni;
+        MyOmniStereo mOmni;
 
         Application::Delegate* delegate;
 
