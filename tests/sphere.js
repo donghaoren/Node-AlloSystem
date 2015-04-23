@@ -180,7 +180,7 @@ allosphere.onDraw(function(info) {
 //allosphere.setStereoMode("mono");
 //allosphere.setProjectionMode("perspective");
 allosphere.enableWindowNavigation();
-allosphere.launchAlloVolume();
+allosphere.launchAlloVolume("/Users/donghao/Documents/Projects/AlloVolumeRendering/build/allovolume.yaml");
 // Main event loop for alloutil.
 setInterval(function() {
     allosphere.tick();

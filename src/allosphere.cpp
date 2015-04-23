@@ -274,7 +274,7 @@ namespace iv { namespace al {
                         v.h * vp.h
                     );
                     gl.viewport(viewport);
-                    //gl.clear(Graphics::COLOR_BUFFER_BIT | Graphics::DEPTH_BUFFER_BIT);
+                    gl.clear(Graphics::COLOR_BUFFER_BIT | Graphics::DEPTH_BUFFER_BIT);
                     p.blend().bind(2);
                     p.warp().bind(1);
 
@@ -285,6 +285,7 @@ namespace iv { namespace al {
                     gl.error("OmniStereo cube drawStereo begin");
 
                     allovolume::OmnistereoRenderer::Textures volume_front_back = allovolume_renderer->getTextures(i, 0);
+
                     glActiveTexture(GL_TEXTURE3);
                     glEnable(GL_TEXTURE_2D);
                     glBindTexture(GL_TEXTURE_2D, volume_front_back.back);
