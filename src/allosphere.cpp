@@ -258,7 +258,7 @@ namespace iv { namespace al {
             if(delegate) delegate->onFrame();
             mOmni.capture(*this, mLens, mNav);
             if(allovolume_renderer && allovolume_renderer->isReady()) {
-                allovolume_renderer->loadDepthCubemap(mOmni.textureDepthLeft(), mOmni.textureDepthRight(), mLens.near(), mLens.far());
+                allovolume_renderer->loadDepthCubemap(mOmni.textureDepthLeft(), mOmni.textureDepthRight(), mLens.near(), mLens.far(), mLens.eyeSep());
 
                 allovolume_renderer->uploadTextures();
 

@@ -165,11 +165,12 @@ allosphere.onDraw(function(info) {
     sphereShader_begin(g, 40);
     g.GL.begin(g.GL.POINTS);
     g.GL.color4f(1, 1, 1, 1);
+    var s = 30 + 10 * Math.sin(new Date().getTime() / 1000 * 4);
     for(var x = -3; x <= 3; x++)
         for(var y = -3; y <= 3; y++)
             for(var z = -3; z <= 3; z++) {
                 if(x == 0 && y == 0 && z == 0) continue;
-                g.GL.vertex4f(x * 30, y * 30, z * 30, 0.2 * 30);
+                g.GL.vertex4f(x * s, y * s, z * s, 0.2 * s);
             }
     g.GL.end();
     sphereShader_end(g);
@@ -178,7 +179,7 @@ allosphere.onDraw(function(info) {
 });
 
 //allosphere.setStereoMode("mono");
-//allosphere.setProjectionMode("perspective");
+allosphere.setProjectionMode("perspective");
 allosphere.enableWindowNavigation();
 allosphere.launchAlloVolume("/Users/donghao/Documents/Projects/AlloVolumeRendering/build/allovolume.yaml");
 // Main event loop for alloutil.
