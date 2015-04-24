@@ -38,12 +38,8 @@ static const char * fCube = AL_STRINGIFY(
 
     varying vec2 T;
 
-    vec4 blend(vec4 src, vec4 dst) {
-        vec4 result;
-        result.a = src.a + dst.a * (1.0 - src.a);
-        result.rgb = (src.rgb * src.a + dst.rgb * dst.a * (1.0 - src.a)) / result.a;
-        if(result.a == 0.0) result.rgb = vec3(0.0, 0.0, 0.0);
-        return result;
+    vec4 blendPM(vec4 src, vec4 dst) {
+        return src + (dst * (1.0 - src.a));
     }
 
     void main (void){
@@ -51,15 +47,19 @@ static const char * fCube = AL_STRINGIFY(
         vec3 v = normalize(texture2D(pixelMap, T).rgb);
 
         // index into cubemap:
+        // Cubemap color is premultiplied.
+        vec4 black = vec4(0.0, 0.0, 0.0, 1.0);
         vec4 color = textureCube(cubeMap, v);
         // Volume colors are non-premultiplied.
         vec4 vf = texture2D(volumeFront, T);
         vec4 vb = texture2D(volumeBack, T);
-        color = blend(vf, blend(color, vb));
+        vf.rgb *= vf.a;
+        vb.rgb *= vb.a;
+        color = blendPM(vf, blendPM(color, blendPM(vb, black)));
         // //color = vf + vb;
         //color = blend(vf, color);
 
-        vec3 rgb = color.rgb * color.a * texture2D(alphaMap, T).rgb;
+        vec3 rgb = color.rgb * texture2D(alphaMap, T).rgb;
         gl_FragColor = vec4(rgb, 1.0);
     }
 );
